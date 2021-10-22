@@ -1,0 +1,45 @@
+Package: scWizard
+Title: An Amazing Shiny App
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "qs",
+           family = "x",
+           role = c("aut", "cre"),
+           email = "your@email.com")
+Description: The aim of scWizard is:
+License: GPL(>=3)
+Imports: 
+    config,
+    V8,
+    BiocGenerics,
+    DT,
+    doParallel,
+    dplyr,
+    future,
+    GSVA,
+    GSVAdata,
+    GSEABase,
+    golem,
+    ggplot2,
+    Matrix,
+    monocle (== 2.18.0),
+    patchwork,
+    pheatmap,
+    SCENIC,
+    Seurat,
+    shiny,
+    shinyBS,
+    shinycssloaders,
+    shinydashboard,
+    shinyFiles,
+    shinyjs,
+    sodium,
+    Rcpp (>= 1.0.7),
+    reticulate,
+    harmony
+biocViews:
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+Depends:
+    R (>= 4.0.0)

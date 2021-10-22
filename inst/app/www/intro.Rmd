@@ -1,0 +1,84 @@
+---
+title: "Intro"
+author: "XQS"
+date: "March 1, 2021"
+output: html_document
+runtime: shiny
+---
+
+## **Introduction**
+
+---
+
+This is a web-based interactive application for further analysis of single cell data after Seurat analysis.
+
+You can freely choose the analysis method and set the values of the parameters. After the analysis, you can also save the result data for drawing or some personalized analysis.
+
+It is meant to provide an intuitive interface for researchers to easily upload, analyze, visualize, and explore single-cell RNA-seq data interactively with no prior programming knowledge in R.
+
+See **Figure 1** below for a diagram that outlines all the workflow steps and their expected output
+
+<div class="col-md-12"><hr style="border-top: none;"></div>
+
+<p style="width: 100%;max-width:300px;margin: 10px auto;display: block;"><strong><em>Figure 1: Workflow (Click figure to enlarge)</em></strong></p>
+<a href="#" class="pop">
+    <div class="BoxArea4" style="width: 100%;max-width:300px;margin: 0 auto;display: block;">
+    <img src="app/www/Single-cellAnalysisWorkflow.png" alt="Workflow" style="width: 100%;max-width:300px;margin: 0 auto;display: block;"/>
+    </div>
+</a>
+
+<div class="modal fade" id="imagemodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">              
+      <div class="modal-body">
+      	<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <img src="" class="imagepreview" style="width: 100%;" >
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="col-md-12"><hr style="border-top: none;"></div>
+
+## **Input Data Types**
+
+---
+
+This application accepts the following types of input data:
+
+### 1. Example data (Demo):
+
+- For demo purposes, you can select "Example data"
+
+- That will automatically load the RDS data
+
+### 2. Upload your own data (.rds):
+
+- You can choose local file upload, but it must be in RDS format
+
+## **Run Results**
+---
+### 1. Data Output
+There will be plenty of output information from major steps, some of which will be displayed downloadable.
+
+### 2. Visualization
+Various forms of visualizations are included:
+
+* **GSVA**
+    * Heatmap
+* **Monocle**
+    *  cellTrajectory_pse
+    *  cellTrajectory_sta
+    *  cellTrajectory_seu
+* **Scenic**
+    *  
+    *  
+* **CellphoneDB**
+    * Bubble map 
+    * Heatmap
+* **Cor**
+    * Heatmap 
+    
+---
+
