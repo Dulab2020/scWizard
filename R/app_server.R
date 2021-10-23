@@ -317,7 +317,7 @@ app_server <- function( input, output, session ) {
     conda_install(envname = 'r-reticulate', packages = 'tensorflow-gpu==2.4.1', pip = T)
   }
   #reticulate::use_miniconda('./miniconda', required = F)
-  reticulate::use_python(system.file("miniconda/r-reticulate", package='scWizard'), required = F)
+  reticulate::use_python(system.file("miniconda/envs/r-reticulate", package='scWizard'), required = F)
   py_config()
   observe({
     
@@ -336,7 +336,7 @@ app_server <- function( input, output, session ) {
   AnnotionReactive <- eventReactive(input$startAnnotion, {
     withProgress(message = "Processing,please wait",{
       
-      source_python(system.file("python/BP3.py", package='scWizard'))
+      source_python(system.file("app/www/python/BP3.py", package='scWizard'))
       data_rds = inputDataReactive()$data
       
       shiny::setProgress(value = 0.4, detail = "Calculating ...")
@@ -455,7 +455,7 @@ app_server <- function( input, output, session ) {
   SubannotionReactive <- eventReactive(input$startSubannotion, {
     withProgress(message = "Processing,please wait",{
       
-      source_python(system.file("python/BP5.py", package='scWizard'))
+      source_python(system.file("app/www/python/BP5.py", package='scWizard'))
       data_rds = ClassificationReactive()$tmp_data
       
       shiny::setProgress(value = 0.4, detail = "Calculating ...")
