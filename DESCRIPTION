@@ -35,7 +35,7 @@ Imports:
     shinyjs,
     sodium,
     Rcpp (>= 1.0.7),
-    reticulate,
+    reticulate (1.18),
     harmony
 biocViews:
 Encoding: UTF-8

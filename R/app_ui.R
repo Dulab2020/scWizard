@@ -196,6 +196,7 @@ app_ui <- function(request) {
                                                                          column(4,numericInput("regularization", "Regularization rate", value = 0.05)),
                                                                          column(4,numericInput("PCAk", "PCA.k", value = 200)),
                                                                          div(style = "clear:both;"),
+                                                                         actionButton("installPython","install Python",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%"),
                                                                          actionButton("startAnnotion","start Annotion",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%")
                                                                        ),
                                                                        conditionalPanel("output.AnnotionAvailable",
