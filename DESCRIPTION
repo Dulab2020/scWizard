@@ -22,7 +22,7 @@ Imports:
     golem,
     ggplot2,
     Matrix,
-    monocle (== 2.18.0),
+    monocle (>= 2.18.0),
     patchwork,
     pheatmap,
     SCENIC,
@@ -43,3 +43,5 @@ LazyData: true
 RoxygenNote: 7.1.1
 Depends:
     R (>= 4.0.0)
+Remotes:
+    github::aertslab/SCENIC
