@@ -16,30 +16,6 @@ You can freely choose the analysis method and set the values of the parameters. 
 
 It is meant to provide an intuitive interface for researchers to easily upload, analyze, visualize, and explore single-cell RNA-seq data interactively with no prior programming knowledge in R.
 
-See **Figure 1** below for a diagram that outlines all the workflow steps and their expected output
-
-<div class="col-md-12"><hr style="border-top: none;"></div>
-
-<p style="width: 100%;max-width:300px;margin: 10px auto;display: block;"><strong><em>Figure 1: Workflow (Click figure to enlarge)</em></strong></p>
-<a href="#" class="pop">
-    <div class="BoxArea4" style="width: 100%;max-width:300px;margin: 0 auto;display: block;">
-    <img src="app/www/Single-cellAnalysisWorkflow.png" alt="Workflow" style="width: 100%;max-width:300px;margin: 0 auto;display: block;"/>
-    </div>
-</a>
-
-<div class="modal fade" id="imagemodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">              
-      <div class="modal-body">
-      	<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-        <img src="" class="imagepreview" style="width: 100%;" >
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<div class="col-md-12"><hr style="border-top: none;"></div>
 
 ## **Input Data Types**
 
