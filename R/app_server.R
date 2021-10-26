@@ -324,10 +324,14 @@ app_server <- function( input, output, session ) {
       if(!file.exists(system.file("miniconda", package='scWizard')))
       {
         dir.create(paste0(system.file("", package='scWizard'),'/miniconda'))
+        
         conda_path = system.file("miniconda", package='scWizard')
         cellphonedb_path = system.file("app/www/CellPhoneDB-2.1.4.tar.gz", package='scWizard')
-        envs = system.file("miniconda/envs/r-reticulate", package='scWizard')
+        
         install_miniconda(path = conda_path)
+        dir.create(paste0(system.file("miniconda/envs", package='scWizard'),'/python-scWizard'))
+        reticulate::conda_create(envname = system.file("miniconda/envs/python-scWizard", package='scWizard'), python_version = 3.7)
+        envs = system.file("miniconda/envs/python-scWizard", package='scWizard')
         conda_install(envname = envs, packages = 'rpy2==3.4.2', pip = T)
         conda_install(envname = envs, packages = cellphonedb_path, pip = T)
         conda_install(envname = envs, packages = 'scikit-learn==0.22', pip = T)
