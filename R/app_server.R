@@ -332,7 +332,7 @@ app_server <- function( input, output, session ) {
       {
         conda_remove(envname = system.file("miniconda/envs/r-reticulate", package='scWizard'))
         dir.create(paste0(system.file("miniconda/envs", package='scWizard'),'/python-scWizard'))
-        conda_create(envname = system.file("miniconda/envs/python-scWizard", package='scWizard'), python_version = 3.7)
+        conda_create(envname = system.file("miniconda/envs/python-scWizard", package='scWizard'), python_version = "3.7")
       }
       if(file.exists(system.file("miniconda/envs/python-scWizard", package='scWizard')))
       {
