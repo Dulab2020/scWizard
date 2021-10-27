@@ -345,7 +345,7 @@ app_server <- function( input, output, session ) {
         conda_install(envname = envs, packages = 'scikit-learn==0.22', pip = T)
         conda_install(envname = envs, packages = 'tensorflow-gpu==2.4.1', pip = T)
       }
-      reticulate::use_python(system.file("miniconda/envs/python-scWizard", package='scWizard'), required = F)
+      reticulate::use_python(system.file("miniconda/envs/r-reticulate", package='scWizard'), required = F)
       py_config()
       
       shiny::setProgress(value = 0.8, detail = "Done.")
