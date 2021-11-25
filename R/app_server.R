@@ -30,9 +30,11 @@
 #' @noRd
 app_server <- function( input, output, session ) {
   # List the first level callModules here
+  options(shiny.maxRequestSize=-1) # Remove limit of upload   
+  options(shiny.deprecation.messages=T)   
+  options(warn =-1)
   
   ### 数据导入
-  options(shiny.maxRequestSize = 50 * 1024 ^ 2)
   observe({
     inputDataReactive()
   })
