@@ -20,17 +20,17 @@ app_ui <- function(request) {
           id = "tabs",
           menuItem("User Guide", tabName = "introTab", icon = icon("info-circle")),
           menuItem("Input Data", tabName = "datainput", icon = icon("upload")),
+          menuItem("Quality Control", tabName = "qcTab", icon = icon("th")),
           menuItem("Batch Processing", tabName = "batchTab", icon = icon("th")),
           menuItem("Cell Annotation", tabName = "annoTab", icon = icon("th")),
           menuItem("GSVA", tabName = "gsvaTab", icon = icon("th")),
           menuItem("Find Markers", tabName = "findMarkersTab", icon = icon("th")),
+          menuItem("inferCNV", tabName = "infercnvTab", icon = icon("th")),
           menuItem("Monocle", tabName = "monocleTab", icon = icon("th")),
           menuItem("TF-SCENIC", tabName = "tfScenicTab", icon = icon("th")),
           menuItem("Correlation Analysis", tabName = "corTab", icon = icon("th")),
           menuItem("CellphoneDB", tabName = "cellphoneDBTab", icon = icon("th")),
           menuItem("Plot", tabName = "plotTab", icon = icon("bar-chart"))
-          
-          
         )
       ),
       dashboardBody(
@@ -85,6 +85,59 @@ app_ui <- function(request) {
                   )#column
                   )#fluidrow
           ),#tabpanel
+          
+          tabItem(tabName = "qcTab",
+                  
+                  fluidRow(
+                    
+                    column(12,
+                           h3(strong("Single Cell Quality Control")),
+                           hr(),
+                           
+                           column(12,
+                                  tags$div(class = "BoxArea2",
+                                           p("GSVA is a non parametric and unsupervised analysis method, which is mainly used to evaluate the gene set enrichment results of transcriptome. In order to evaluate whether different metabolic pathways are enriched in different products, the expression matrix of genes among different products is transformed into the expression matrix of gene sets among different samples."),
+                                           p("Introduction parameters:"),
+                                           p("-kcdf: Choose method to estimate"),
+                                           p("-gmtfile: Geneset file"),
+                                           p("-celltype: Choose the cell type you want to calculate"),
+                                           p("-mix.diff: Offers two approaches to calculate the enrichment statistic"),
+                                           
+                                           tabsetPanel(type = "tabs",
+                                                       tabPanel("QC",
+                                                                
+                                                                column(12,
+                                                                       wellPanel(
+                                                                         h4("Set the value of QC parameter:"),
+                                                                         
+                                                                         column(4,numericInput("featurelow", "nFeature_RNA.low", value = 200)),
+                                                                         column(4,numericInput("featurehigh", "nFeature_RNA.high", value = 6000)),
+                                                                         column(4,numericInput("countlow", "nCount_RNA.low", value = 200)),
+                                                                         column(4,numericInput("counthigh", "nCount_RNA.high", value = 60000)),
+                                                                         column(4,numericInput("percent", "percent.mt", value = 75)),
+                                                                         
+                                                                         div(style = "clear:both;"),
+                                                                         actionButton("viewQC","View quality",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%"),
+                                                                         actionButton("startQC","start QC",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%")
+                                                                       ),
+                                                                       
+                                                                       br(),
+                                                                       withSpinner(plotOutput(outputId = "viewPlot", height = 350)),
+                                                                       withSpinner(plotOutput(outputId = "QCPlot", height = 350))
+                                                                ),
+                                                                tags$div(class = "clearBoth")
+                                                       )
+                                                       
+                                           )
+                                  )
+                                  
+                           ),
+                           tags$div(class = "clearBoth")
+                           
+                    )
+                  )
+          ),
+          
           tabItem(tabName = "batchTab",
                   
                   fluidRow(
@@ -357,6 +410,49 @@ app_ui <- function(request) {
                                                                        ),
                                                                        br(),
                                                                        withSpinner(dataTableOutput('clusterMarkers'))
+                                                                ),
+                                                                tags$div(class = "clearBoth")
+                                                       )
+                                                       
+                                           )
+                                  )
+                                  
+                           ),
+                           tags$div(class = "clearBoth")
+                           
+                    )
+                  )
+          ),
+          
+          tabItem(tabName = "infercnvTab",
+                  fluidRow(
+                    column(12,
+                           h3(strong("Copy Number Variation Analysis")),
+                           hr(),
+                           column(12,
+                                  tags$div(class = "BoxArea2",
+                                           p("GSVA is a non parametric and unsupervised analysis method, which is mainly used to evaluate the gene set enrichment results of transcriptome. In order to evaluate whether different metabolic pathways are enriched in different products, the expression matrix of genes among different products is transformed into the expression matrix of gene sets among different samples."),
+                                           p("Introduction parameters:"),
+                                           p("-kcdf: Choose method to estimate"),
+                                           p("-gmtfile: Geneset file"),
+                                           p("-celltype: Choose the cell type you want to calculate"),
+                                           p("-mix.diff: Offers two approaches to calculate the enrichment statistic"),
+                                           
+                                           tabsetPanel(type = "tabs",
+                                                       tabPanel("infercnv",
+                                                                column(12,
+                                                                       wellPanel(
+                                                                         h4("Set the value of infercnv parameter:"),
+                                                                         
+                                                                         #column(4,numericInput("threshAll", "Logfc Thresh", value = 0.25)),
+                                                                         column(4,numericInput("cutoff", "cutoff(1-Smart-seq2, 0.1-10X)", value = 0.1)),
+                                                                         column(4, fileInput('geneorderfile', 'gene_order_file', multiple = TRUE)),
+                                                                         column(4, uiOutput("myselectinfercnvbox")),
+                                                                         
+                                                                         div(style = "clear:both;"),
+                                                                         actionButton("startinfercnv","start infercnv",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%")
+                                                                       ),
+                                                                       
                                                                 ),
                                                                 tags$div(class = "clearBoth")
                                                        )
