@@ -363,6 +363,7 @@ app_server <- function( input, output, session ) {
           conda_install(envname = envs, packages = cellphonedb_path, pip = T)
           conda_install(envname = envs, packages = 'scikit-learn==0.22', pip = T)
           conda_install(envname = envs, packages = 'tensorflow-gpu==2.4.1', pip = T)
+          conda_install(envname = envs, packages = 'tables', pip = T)
         }
         reticulate::use_python(system.file("miniconda/envs/r-reticulate", package='scWizard'), required = F)
         py_config()
@@ -389,9 +390,9 @@ app_server <- function( input, output, session ) {
         else
           data_rds = inputDataReactive()$data
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
-        X_total_path=system.file('app/www/python/trainset/test_set_3k.h5', package='scWizard')
+        X_total_path=system.file('app/www/python/trainset/trainx_all.h5', package='scWizard')
         
-        Y_total=read.csv(system.file('app/www/python/trainset/label2_3k.csv', package='scWizard'))
+        Y_total=read.csv(system.file('app/www/python/trainset/trainy_all.csv', package='scWizard'))
         Y_total$X=NULL
         colnames(Y_total)=c('celltype')
         num_classes = length(unique(Y_total$celltype))
@@ -421,7 +422,6 @@ app_server <- function( input, output, session ) {
       return(!is.null(AnnotionReactive()$data))
     })
   outputOptions(output, 'AnnotionAvailable', suspendWhenHidden=FALSE)
-  
   output$downloadAnnotionPlot <- downloadHandler(
     filename = function()  {'plot_pred_cell.pdf'},
     content = function(file) {
@@ -429,13 +429,14 @@ app_server <- function( input, output, session ) {
       print(AnnotionReactive()$data)
       dev.off()}
   )
+  
   # return selectbox
   output$myselectboxanno1 <-
     renderUI({
       data_rds = AnnotionReactive()$data_rds
       label = unique(data_rds@meta.data$pred_cell)
       selectInput("celltype1", "choose celltype",
-                  choices =c(' ' ,label), selected = ' ')
+                  choices =c(NULL ,label), selected = NULL)
     })
   observe({
     ClassificationReactive()
@@ -444,16 +445,21 @@ app_server <- function( input, output, session ) {
     withProgress(message = "Processing,please wait",{
       tryCatch({
         #data_rds = inputDataReactive()$data
-        data_rds = AnnotionReactive()$data_rds
+        if(input$startAnnotion > 0)
+          data_rds = AnnotionReactive()$data_rds
+        else
+          data_rds = inputDataReactive()$data
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
         tmp_data = subset(data_rds, subset = pred_cell==input$celltype1)
         tmp_counts = tmp_data@assays$RNA@counts
+        tmp_meta = tmp_data@meta.data
         tmp_data = CreateSeuratObject(counts = tmp_counts, project = input$celltype1, min.cells = 3, min.features = 200)
+        tmp_data@meta.data = tmp_meta
         tmp_data <- NormalizeData(tmp_data, normalization.method = "LogNormalize", scale.factor = 10000)
         tmp_data <- FindVariableFeatures(tmp_data, selection.method = "vst", nfeatures = 2000)
         all.genes <- rownames(tmp_data)
         tmp_data <- ScaleData(tmp_data, features = all.genes)
-        tmp_data <- RunPCA(tmp_data, features = VariableFeatures(object = data_rds), npcs=30)
+        tmp_data <- RunPCA(tmp_data, features = VariableFeatures(object = tmp_data), npcs=30)
         tmp_data <- FindNeighbors(tmp_data, dims = 1:30)
         tmp_data <- FindClusters(tmp_data, resolution = input$resolution)
         tmp_data <- RunTSNE(tmp_data, dims = 1:30, perplexity=5)
@@ -485,35 +491,61 @@ app_server <- function( input, output, session ) {
       print(ClassificationReactive()$data)
       dev.off()}
   )
+  # anno_cellsubtype
   observe({
     SubannotionReactive()
   })
   SubannotionReactive <- eventReactive(input$startSubannotion, {
     withProgress(message = "Processing,please wait",{
       tryCatch({
-        source_python(system.file("app/www/python/BP5.py", package='scWizard'))
         data_rds = ClassificationReactive()$tmp_data
-      
-        shiny::setProgress(value = 0.4, detail = "Calculating ...")
-        X_total=read.csv(system.file('app/www/example/trainx.csv', package='scWizard'))
-        row.names(X_total)=X_total$X
-        X_total$X=NULL
-        Y_total=read.csv(system.file('app/www/example/trainy.csv', package='scWizard'))
+        #cur_celltype = data_rds@meta.data$pred_cell[1]
+        cur_celltype = input$celltype1
+        source_python(system.file("app/www/python/BP5_new.py", package='scWizard'))
+        if(cur_celltype == 'End')
+        {
+          X_total_path=system.file('app/www/python/trainset/trainx_End.h5', package='scWizard')
+          Y_total=read.csv(system.file('app/www/python/trainset/trainy_End.csv', package='scWizard'))
+        }
+        else if(cur_celltype == 'Fib')
+        {
+          X_total_path=system.file('app/www/python/trainset/trainx_Fib.h5', package='scWizard')
+          Y_total=read.csv(system.file('app/www/python/trainset/trainy_Fib.csv', package='scWizard'))
+        }
+        else if(cur_celltype == 'Mye')
+        {
+          X_total_path=system.file('app/www/python/trainset/trainx_Mye.h5', package='scWizard')
+          Y_total=read.csv(system.file('app/www/python/trainset/trainy_Mye.csv', package='scWizard'))
+        }
+        else if(cur_celltype == 'T&NK')
+        {
+          X_total_path=system.file('app/www/python/trainset/trainx_T.h5', package='scWizard')
+          Y_total=read.csv(system.file('app/www/python/trainset/trainy_T.csv', package='scWizard'))
+        }
+        else if(cur_celltype == 'CD4T')
+        {
+          X_total_path=system.file('app/www/python/trainset/trainx_CD4T.h5', package='scWizard')
+          Y_total=read.csv(system.file('app/www/python/trainset/trainy_CD4T.csv', package='scWizard'))
+        }
+        else
+        {
+          X_total_path=system.file('app/www/python/trainset/trainx_CD8T.h5', package='scWizard')
+          Y_total=read.csv(system.file('app/www/python/trainset/trainy_CD8T.csv', package='scWizard'))
+        }
         Y_total$X=NULL
         colnames(Y_total)=c('celltype')
         num_classes = length(unique(Y_total$celltype))
+        shiny::setProgress(value = 0.4, detail = "Calculating ...")
         X_verify=t(as.data.frame(data_rds@assays$RNA@data))
         X_verify=as.data.frame(X_verify)
         subclusters=as.vector(data_rds@active.ident)
         subclusters=as.data.frame(subclusters)
-      
         res_celltype=get_BP5_res(X_total, Y_total$celltype, X_verify, subclusters, num_classes, input$PCAk2, input$layer2_1, input$layer2_2, input$layer2_3, input$regularization2, input$regularization2, input$learning2)
         names(res_celltype) <- levels(data_rds)
         data_rds <- RenameIdents(data_rds, res_celltype)
         data_rds@meta.data$pred_sub_cell = as.vector(data_rds@active.ident)
         res_plot = DimPlot(data_rds,reduction = "tsne",pt.size = .1,group.by = 'pred_sub_cell')
         shiny::setProgress(value = 0.8, detail = "Done.")
-      
         return(list("data" = res_plot, "data_rds" = data_rds))
       },
       error=function(cond){
@@ -523,21 +555,17 @@ app_server <- function( input, output, session ) {
       
     })
   })
-  
   output$SubannotionPlot <- renderPlot({
     tmp <- SubannotionReactive()
-    
     if(!is.null(tmp)){
       tmp$data
     }
   })
-  
   output$SubannotionAvailable <-
     reactive({
       return(!is.null(SubannotionReactive()$data))
     })
   outputOptions(output, 'SubannotionAvailable', suspendWhenHidden=FALSE)
-  
   output$downloadSubannotionPlot <- downloadHandler(
     filename = function()  {'plot_pred_sub_cell.pdf'},
     content = function(file) {
@@ -545,7 +573,6 @@ app_server <- function( input, output, session ) {
       print(SubannotionReactive()$data)
       dev.off()}
   )
-  
   
   ### Find markers
   observe({
