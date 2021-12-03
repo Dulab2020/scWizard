@@ -36,6 +36,7 @@ Imports:
     sodium,
     Rcpp (>= 1.0.7),
     reticulate,
+    infercnv,
     harmony
 biocViews:
 Encoding: UTF-8
