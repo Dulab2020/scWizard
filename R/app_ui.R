@@ -499,6 +499,7 @@ app_ui <- function(request) {
                                                                                               choices = c("DDRTree",
                                                                                                           "ICA", "tSNE", "SimplePPT", "L1-graph", "SGL-tree"), selected = "DDRTree")),
                                                                          column(4,uiOutput("myselectbox3")),
+                                                                         column(4,uiOutput("myselectcolorbox")),
                                                                          div(style = "clear:both;"),
                                                                          actionButton("startMonocle","start Monocle",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%")
                                                                        ),
@@ -506,8 +507,8 @@ app_ui <- function(request) {
                                                                                         downloadButton('downloadMonocleRDS','Save Results as RDS File', class = "btn btn-primary"),
                                                                                         p("Calculation completed, please download data...")
                                                                        ),
-                                                                       br()
-                                                                       #withSpinner(dataTableOutput('Monocle'))
+                                                                       br(),
+                                                                       withSpinner(plotOutput(outputId = "MonoclePlot", height = 350))
                                                                 ),
                                                                 tags$div(class = "clearBoth")
                                                        )

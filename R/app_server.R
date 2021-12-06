@@ -696,12 +696,10 @@ app_server <- function( input, output, session ) {
   
   ### pseudotime
   observe({
-    
     if(!is.null(inputDataReactive()))
     {
       data_rds = inputDataReactive()$data
     }
-    
   })
   
   # return selectbox
@@ -712,12 +710,23 @@ app_server <- function( input, output, session ) {
       selectInput("celltype", "choose celltype",
                   choices =c('all' ,label), selected = 'all')
     })
+  output$myselectcolorbox <-
+    renderUI({
+      if(input$startAnnotion > 0)
+        data_rds = AnnotionReactive()$data
+      else
+        data_rds = inputDataReactive()$data
+      label=colnames(data_rds@meta.data)
+      selectInput("colorby", "color_by",
+                  choices =c(NULL ,label), selected = NULL, multiple = TRUE)
+    })
   observe({
     MonocleReactive()
   })
   MonocleReactive <- eventReactive(input$startMonocle, {
     withProgress(message = "Processing,please wait",{
       tryCatch({
+        library(monocle)
         data_rds = inputDataReactive()$data
         if(input$celltype=='all')
         {
@@ -732,7 +741,7 @@ app_server <- function( input, output, session ) {
       
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
       
-        gene_annotation<-data.frame(gene_short_name=row.names(new_data_rds))#“gene_short_name”
+        gene_annotation<-data.frame(gene_short_name=row.names(new_data_rds@assays$RNA@counts))#“gene_short_name”
         row.names(gene_annotation)<-gene_annotation[,1]
         pd <- new("AnnotatedDataFrame", data = cellinfo)#cell information
         fd <- new("AnnotatedDataFrame", data = gene_annotation)#gene information
@@ -740,7 +749,7 @@ app_server <- function( input, output, session ) {
                               phenoData = pd,
                               featureData = fd,
                               lowerDetectionLimit = input$lowerdetectionlimit,
-                              expressionFamily = negbinomial.size())
+                              expressionFamily = VGAM::negbinomial.size())
         # pre-process
         HSMM <- estimateSizeFactors(HSMM)
         HSMM <- estimateDispersions(HSMM)
@@ -749,28 +758,45 @@ app_server <- function( input, output, session ) {
         unsup_clustering_genes <- subset(disp_table, mean_expression >= input$meanexpression)
         HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
         # Dimensionality reduction by DDRtree
-        HSMM_myo <- reduceDimension(HSMM, max_components = input$maxcomponents, method = input$rmethod)
+        HSMM_myo <- reduceDimension(HSMM, max_components = input$maxcomponents, reduction_method = input$rmethod)
         # calculation pseudotime
         HSMM_myo <- orderCells(HSMM_myo)
+        p1 = plot_cell_trajectory(HSMM_myo, color_by = "Pseudotime")
+        colorby = input$colorby
+        res_plot = p1
+        if(length(colorby) > 0)
+        {
+          for(i in c(1:length(colorby)))
+          {
+            res_plot = res_plot + plot_cell_trajectory(HSMM_myo, color_by = colorby[i])
+          }
+        }
+        
         shiny::setProgress(value = 0.8, detail = "Done.")
-        return(list("data" = HSMM_myo))
+        return(list("plot" = res_plot))
       },
       error=function(cond) {
         message("Here's the original error.")
+        message(cond)
         return(NULL)
       })
     })
   })
+  output$MonoclePlot <- renderPlot({
+    tmp <- MonocleReactive()
+    if(!is.null(tmp)){
+      tmp$plot
+    }
+  })
   output$MonocleAvailable <-
     reactive({
-      return(!is.null(MonocleReactive()$data))
+      return(!is.null(MonocleReactive()$plot))
     })
   outputOptions(output, 'MonocleAvailable', suspendWhenHidden=FALSE)
-  
   output$downloadMonocleRDS <- downloadHandler(
-    filename = function()  {"res_moncle.rds"},
+    filename = function()  {"res_moncle.pdf"},
     content = function(file) {
-      saveRDS(MonocleReactive()$data, file)}
+      saveRDS(MonocleReactive()$plot, file)}
   )
   
   
@@ -788,6 +814,7 @@ app_server <- function( input, output, session ) {
   startCoexpressionReactive <- eventReactive(input$startCoexpression, {
     withProgress(message = "Processing,please wait",{
       tryCatch({
+        library(SCENIC)
         data_rds = inputDataReactive()$data
         cellalltype = as.vector(data_rds@active.ident)
         cellalltype = as.data.frame(cellalltype)
@@ -816,6 +843,7 @@ app_server <- function( input, output, session ) {
       },
       error=function(cond) {
         message("Here's the original error.")
+        message(cond)
         return(NULL)
       })
     })
