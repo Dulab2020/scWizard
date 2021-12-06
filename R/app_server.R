@@ -433,7 +433,10 @@ app_server <- function( input, output, session ) {
   # return selectbox
   output$myselectboxanno1 <-
     renderUI({
-      data_rds = AnnotionReactive()$data_rds
+      if(input$startAnnotion>0)
+        data_rds = AnnotionReactive()$data_rds
+      else
+        data_rds = inputDataReactive()$data
       label = unique(data_rds@meta.data$pred_cell)
       selectInput("celltype1", "choose celltype",
                   choices =c(NULL ,label), selected = NULL)
@@ -540,7 +543,7 @@ app_server <- function( input, output, session ) {
         X_verify=as.data.frame(X_verify)
         subclusters=as.vector(data_rds@active.ident)
         subclusters=as.data.frame(subclusters)
-        res_celltype=get_BP5_res(X_total, Y_total$celltype, X_verify, subclusters, num_classes, input$PCAk2, input$layer2_1, input$layer2_2, input$layer2_3, input$regularization2, input$regularization2, input$learning2)
+        res_celltype=get_BP5_res(X_total_path, Y_total$celltype, X_verify, subclusters, num_classes, input$PCAk2, input$layer2_1, input$layer2_2, input$layer2_3, input$regularization2, input$regularization2, input$learning2)
         names(res_celltype) <- levels(data_rds)
         data_rds <- RenameIdents(data_rds, res_celltype)
         data_rds@meta.data$pred_sub_cell = as.vector(data_rds@active.ident)
