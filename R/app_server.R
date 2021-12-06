@@ -387,7 +387,7 @@ app_server <- function( input, output, session ) {
           data_rds = CCAReactive()$data
         else if(input$startHarmony > 0)
           data_rds = HarmonyReactive()$data
-        else
+        else0
           data_rds = inputDataReactive()$data
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
         X_total_path=system.file('app/www/python/trainset/trainx_all.h5', package='scWizard')
@@ -406,7 +406,7 @@ app_server <- function( input, output, session ) {
       },
       error=function(cond) {
         message("Here's the original error.")
-        #message(cond)
+        message(cond)
         return(NA)
       })
     })
