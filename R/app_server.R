@@ -402,6 +402,9 @@ app_server <- function( input, output, session ) {
         num_classes = length(unique(Y_total$celltype))
         X_verify=t(as.data.frame(data_rds@assays$RNA@data))
         X_verify=as.data.frame(X_verify)
+        print(X_verify[1:5,1:5])
+        print(class(X_verify[1,1]))
+        head(Y_total)
         res_celltype=get_BP3_res(X_total_path, Y_total$celltype, X_verify, num_classes, input$PCAk, input$layer1, input$regularization, input$learning)
         data_rds@meta.data$pred_cell = res_celltype
         res_plot = DimPlot(data_rds,reduction = "tsne",pt.size = .1,group.by = 'pred_cell')
@@ -548,6 +551,8 @@ app_server <- function( input, output, session ) {
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
         X_verify=t(as.data.frame(data_rds@assays$RNA@data))
         X_verify=as.data.frame(X_verify)
+        print(X_verify[1:5,1:5])
+        head(Y_total)
         subclusters=as.vector(data_rds@active.ident)
         subclusters=as.data.frame(subclusters)
         res_celltype=get_BP5_res(X_total_path, Y_total$celltype, X_verify, subclusters, num_classes, input$PCAk2, input$layer2_1, input$layer2_2, input$layer2_3, input$regularization2, input$regularization2, input$learning2)
