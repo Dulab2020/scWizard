@@ -441,11 +441,16 @@ app_server <- function( input, output, session ) {
   # return selectbox
   output$myselectboxanno1 <-
     renderUI({
-      if(input$startAnnotion>0)
+      if(input$startSubannotion > 0 && !is.null(SubannotionReactive())){
+        data_rds = SubannotionReactive()$data_rds
+        label = unique(data_rds@meta.data$pred_sub_cell)
+      }else if(input$startAnnotion > 0 && !is.null(AnnotionReactive())){
         data_rds = AnnotionReactive()$data_rds
-      else
+        label = unique(data_rds@meta.data$pred_cell)
+      }else{
         data_rds = inputDataReactive()$data
-      label = unique(data_rds@meta.data$pred_cell)
+        label = unique(data_rds@meta.data$pred_cell)
+      }
       selectInput("celltype1", "choose celltype",
                   choices =c(NULL ,label), selected = NULL)
     })
@@ -456,12 +461,18 @@ app_server <- function( input, output, session ) {
     withProgress(message = "Processing,please wait",{
       tryCatch({
         #data_rds = inputDataReactive()$data
-        if(input$startAnnotion > 0)
+        if(input$startSubannotion > 0 && !is.null(SubannotionReactive())){
+          data_rds = SubannotionReactive()$data_rds
+          tmp_data = subset(data_rds, subset = pred_sub_cell==input$celltype1)
+        }else if(input$startAnnotion > 0 && !is.null(AnnotionReactive())){
           data_rds = AnnotionReactive()$data_rds
-        else
+          tmp_data = subset(data_rds, subset = pred_cell==input$celltype1)
+        }else{
           data_rds = inputDataReactive()$data
+          tmp_data = subset(data_rds, subset = pred_cell==input$celltype1)
+        }
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
-        tmp_data = subset(data_rds, subset = pred_cell==input$celltype1)
+        #tmp_data = subset(data_rds, subset = pred_cell==input$celltype1)
         tmp_counts = tmp_data@assays$RNA@counts
         tmp_meta = tmp_data@meta.data
         tmp_data = CreateSeuratObject(counts = tmp_counts, project = input$celltype1, min.cells = 3, min.features = 200)
@@ -513,7 +524,10 @@ app_server <- function( input, output, session ) {
         library(reticulate)
         reticulate::use_python(system.file("miniconda/envs/r-reticulate", package='scWizard'), required = F)
         py_config()
-        data_rds = ClassificationReactive()$tmp_data
+        if(input$startClassification>0 && !is.null(ClassificationReactive()))
+          data_rds = ClassificationReactive()$tmp_data
+        else
+          return(NULL)
         #cur_celltype = data_rds@meta.data$pred_cell[1]
         cur_celltype = input$celltype1
         source_python(system.file("app/www/python/BP5_new.py", package='scWizard'))
