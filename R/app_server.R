@@ -349,6 +349,7 @@ app_server <- function( input, output, session ) {
     withProgress(message = "Processing,please wait",{
       shiny::setProgress(value = 0.4, detail = "insatlling ...")
       tryCatch({
+        library(reticulate)
         if(!file.exists(system.file("miniconda", package='scWizard')))
         {
           dir.create(paste0(system.file("", package='scWizard'),'/miniconda'))
@@ -365,12 +366,13 @@ app_server <- function( input, output, session ) {
           conda_install(envname = envs, packages = 'tensorflow-gpu==2.4.1', pip = T)
           conda_install(envname = envs, packages = 'tables', pip = T)
         }
-        reticulate::use_python(system.file("miniconda/envs/r-reticulate", package='scWizard'), required = F)
-        py_config()
+        # reticulate::use_python(system.file("miniconda/envs/r-reticulate", package='scWizard'), required = F)
+        # py_config()
         shiny::setProgress(value = 0.8, detail = "Done.")
       },
       error=function(cond) {
         message("Here's the original error.")
+        message(cond)
         return(NA)
       })
     })
@@ -382,6 +384,8 @@ app_server <- function( input, output, session ) {
   AnnotionReactive <- eventReactive(input$startAnnotion, {
     withProgress(message = "Processing,please wait",{
       tryCatch({
+        reticulate::use_python(system.file("miniconda/envs/r-reticulate", package='scWizard'), required = F)
+        py_config()
         source_python(system.file("app/www/python/BP3_new.py", package='scWizard'))
         if(input$startCCA > 0)
           data_rds = CCAReactive()$data
@@ -472,6 +476,7 @@ app_server <- function( input, output, session ) {
       },
       error=function(cond) {
         message("Here's the original error.")
+        message(cond)
         return(NULL)
       })
     })
@@ -501,6 +506,8 @@ app_server <- function( input, output, session ) {
   SubannotionReactive <- eventReactive(input$startSubannotion, {
     withProgress(message = "Processing,please wait",{
       tryCatch({
+        reticulate::use_python(system.file("miniconda/envs/r-reticulate", package='scWizard'), required = F)
+        py_config()
         data_rds = ClassificationReactive()$tmp_data
         #cur_celltype = data_rds@meta.data$pred_cell[1]
         cur_celltype = input$celltype1
@@ -553,6 +560,7 @@ app_server <- function( input, output, session ) {
       },
       error=function(cond){
         message("Here's the original error.")
+        message(cond)
         return(NULL)
       })
       
