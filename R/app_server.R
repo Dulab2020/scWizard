@@ -384,6 +384,7 @@ app_server <- function( input, output, session ) {
   AnnotionReactive <- eventReactive(input$startAnnotion, {
     withProgress(message = "Processing,please wait",{
       tryCatch({
+        library(reticulate)
         reticulate::use_python(system.file("miniconda/envs/r-reticulate", package='scWizard'), required = F)
         py_config()
         source_python(system.file("app/www/python/BP3_new.py", package='scWizard'))
@@ -404,7 +405,7 @@ app_server <- function( input, output, session ) {
         X_verify=as.data.frame(X_verify)
         print(X_verify[1:5,1:5])
         print(class(X_verify[1,1]))
-        head(Y_total)
+        print(head(Y_total))
         res_celltype=get_BP3_res(X_total_path, Y_total$celltype, X_verify, num_classes, input$PCAk, input$layer1, input$regularization, input$learning)
         data_rds@meta.data$pred_cell = res_celltype
         res_plot = DimPlot(data_rds,reduction = "tsne",pt.size = .1,group.by = 'pred_cell')
@@ -509,6 +510,7 @@ app_server <- function( input, output, session ) {
   SubannotionReactive <- eventReactive(input$startSubannotion, {
     withProgress(message = "Processing,please wait",{
       tryCatch({
+        library(reticulate)
         reticulate::use_python(system.file("miniconda/envs/r-reticulate", package='scWizard'), required = F)
         py_config()
         data_rds = ClassificationReactive()$tmp_data
