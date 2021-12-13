@@ -96,12 +96,13 @@ app_ui <- function(request) {
                            
                            column(12,
                                   tags$div(class = "BoxArea2",
-                                           p("GSVA is a non parametric and unsupervised analysis method, which is mainly used to evaluate the gene set enrichment results of transcriptome. In order to evaluate whether different metabolic pathways are enriched in different products, the expression matrix of genes among different products is transformed into the expression matrix of gene sets among different samples."),
+                                           p("Quality control is an important step in single cell analysis. In the process of cell separation, cell damage or library preparation failure often introduce some low-quality data. If these data are not removed, it may affect the downstream analysis results."),
                                            p("Introduction parameters:"),
-                                           p("-kcdf: Choose method to estimate"),
-                                           p("-gmtfile: Geneset file"),
-                                           p("-celltype: Choose the cell type you want to calculate"),
-                                           p("-mix.diff: Offers two approaches to calculate the enrichment statistic"),
+                                           p("-featurelow: The lower limit of the expression of a gene in all cells"),
+                                           p("-featurehigh: The upper limit of the expression of a gene in all cells"),
+                                           p("-countlow: The lower limit of the sum of counts in a cell"),
+                                           p("-counthigh: The upper limit of the sum of counts in a cell"),
+                                           p("-percent: The upper limit of the proportion of mitochondrial genes in the total counts value of a cell"),
                                            
                                            tabsetPanel(type = "tabs",
                                                        tabPanel("QC",
@@ -180,7 +181,8 @@ app_ui <- function(request) {
                                                                          actionButton("startCCA","start CCA",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%")
                                                                        ),
                                                                        conditionalPanel("output.CCAAvailable",
-                                                                                        downloadButton('downloadCCAPlot','Save Results as Plot File', class = "btn btn-primary")
+                                                                                        downloadButton('downloadCCAPlot','Save Results as Plot File', class = "btn btn-primary"),
+                                                                                        downloadButton('downloadCCAData','Save Results as rds File', class = "btn btn-primary")
                                                                        ),
                                                                        br(),
                                                                        withSpinner(plotOutput(outputId = "CCAPlot", height = 350))
@@ -200,7 +202,8 @@ app_ui <- function(request) {
                                                                          actionButton("startHarmony","start Harmony",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%")
                                                                        ),
                                                                        conditionalPanel("output.HarmonyAvailable",
-                                                                                        downloadButton('downloadHarmonyPlot','Save Results as Plot File', class = "btn btn-primary")
+                                                                                        downloadButton('downloadHarmonyPlot','Save Results as Plot File', class = "btn btn-primary"),
+                                                                                        downloadButton('downloadHarmonyData','Save Results as rds File', class = "btn btn-primary")
                                                                        ),
                                                                        br(),
                                                                        withSpinner(plotOutput(outputId = "HarmonyPlot", height = 350))
@@ -324,10 +327,10 @@ app_ui <- function(request) {
                                            p("GSVA is a non parametric and unsupervised analysis method, which is mainly used to evaluate the gene set enrichment results of transcriptome. In order to evaluate whether different metabolic pathways are enriched in different products, the expression matrix of genes among different products is transformed into the expression matrix of gene sets among different samples."),
                                            p("Introduction parameters:"),
                                            p("-kcdf: Choose method to estimate"),
-                                           p("-gmtfile: Geneset file"),
+                                           p("-gmtfile: Geneset file(The default is angiogenic geneset.)"),
                                            p("-celltype: Choose the cell type you want to calculate"),
                                            p("-mix.diff: Offers two approaches to calculate the enrichment statistic"),
-                                           
+                                           p("-workers: The number of threads for parallel computing"),
                                            tabsetPanel(type = "tabs",
                                                        tabPanel("GSVA",
                                                                 
@@ -431,12 +434,11 @@ app_ui <- function(request) {
                            hr(),
                            column(12,
                                   tags$div(class = "BoxArea2",
-                                           p("GSVA is a non parametric and unsupervised analysis method, which is mainly used to evaluate the gene set enrichment results of transcriptome. In order to evaluate whether different metabolic pathways are enriched in different products, the expression matrix of genes among different products is transformed into the expression matrix of gene sets among different samples."),
+                                           p("Infercnv uses and explores tumor single-cell RNA-seq data to analyze large-scale chromosome copy number alterations (CNA), such as gain or deletions of whole chromosome or large fragment chromosome. The working principle is to use a group of normal cells as a reference to analyze the changes of gene expression intensity at various locations in the tumor genome The relative expression of genes on each chromosome is displayed in the form of heat map. Compared with normal cells, the tumor genome is always overexpressed or underexpressed."),
                                            p("Introduction parameters:"),
-                                           p("-kcdf: Choose method to estimate"),
-                                           p("-gmtfile: Geneset file"),
-                                           p("-celltype: Choose the cell type you want to calculate"),
-                                           p("-mix.diff: Offers two approaches to calculate the enrichment statistic"),
+                                           p("-cutoff: Select which genes will be used for analysis(set 10x to 0.1 and smart-seq to 1)"),
+                                           p("-gene_order_file: Gene location information file"),
+                                           p("-ref_group_names: Set reference group to empty by default"),
                                            
                                            tabsetPanel(type = "tabs",
                                                        tabPanel("infercnv",

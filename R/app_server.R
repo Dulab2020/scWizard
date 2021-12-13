@@ -27,6 +27,7 @@
 #' @import reticulate
 #' @import doParallel
 #' @import BiocGenerics
+#' @import BiocParallel
 #' @import pheatmap
 #' @noRd
 app_server <- function( input, output, session ) {
@@ -44,19 +45,14 @@ app_server <- function( input, output, session ) {
       inFile=system.file("app/www/example/data_300cell.RDS", package='scWizard')
     }
     else{
-      inFile = input$datafile
+      inFile = input$datafile$datapath
     }
     if (!is.null(inFile)) {
-      if(input$data_file_type == "data_rds"){
-        seqdata <- readRDS(inFile$datapath)
-      }
-      else{
-        seqdata <- readRDS(inFile)
-      }
+      seqdata <- readRDS(inFile)
       print('uploaded seqdata')
       shiny::validate(need(ncol(seqdata)>1,
                            message="File appears to be one column. Check that it is a comma or tab delimited file."))
-      return(list('data'=seqdata))
+      return(list('data'=seqdata, 'filepath'=inFile))
     }
     return(NULL)
   })
@@ -105,6 +101,17 @@ app_server <- function( input, output, session ) {
         data_rds <- subset(data_rds, subset = nFeature_RNA>input$featurelow & nFeature_RNA<input$featurehigh & nCount_RNA>input$countlow & nCount_RNA<input$counthigh & percent.mt<input$percent)
         p1 = FeatureScatter(data_rds, feature1 = "nCount_RNA", feature2 = "percent.mt", group.by = 'orig.ident')
         p2 = FeatureScatter(data_rds, feature1 = "nCount_RNA", feature2 = "nFeature_RNA", group.by = 'orig.ident')
+        data_rds <- NormalizeData(data_rds, normalization.method = "LogNormalize", scale.factor = 10000)
+        data_rds <- FindVariableFeatures(data_rds, selection.method = "vst", nfeatures = 2000)
+        all.genes <- rownames(data_rds)
+        data_rds <- ScaleData(data_rds, features = all.genes)
+        data_rds <- RunPCA(data_rds, features = VariableFeatures(object = data_rds))
+        data_rds <- FindNeighbors(data_rds, dims = 1:30)
+        data_rds <- FindClusters(data_rds, resolution = 0.32)
+        data_rds <- RunTSNE(data_rds, dims = 1:30)
+        filepath = inputDataReactive()$filepath
+        filepath_prefix = substring(filepath, 1, nchar(filepath)-4)
+        saveRDS(data_rds, paste0(filepath_prefix, "_qc.rds"))
         shiny::setProgress(value = 0.8, detail = "Done.")
         res_plot = p1+p2
         return(list("plot" = res_plot,"data" = data_rds))
@@ -162,8 +169,19 @@ app_server <- function( input, output, session ) {
   #choose celltype
   output$myselectbox2 <-
     renderUI({
-      data_rds = inputDataReactive()$data
-      label=names(summary(data_rds@active.ident))
+      if(input$startAnnotion > 0 && !is.null(AnnotionReactive()))
+        data_rds = AnnotionReactive()$data
+      else{
+        data_rds = inputDataReactive()$data
+        filepath = inputDataReactive()$filepath
+        filepath_prefix = substring(filepath, 1, nchar(filepath)-4)
+        if(file.exists(paste0(filepath_prefix, "_meta.csv")))
+        {
+          meta = read.csv(paste0(filepath_prefix, "_meta.csv"))
+          data_rds@meta.data = meta
+        }
+      }
+      label=unique(data_rds@meta.data$pred_cell)
       selectInput("celltype", "choose celltype",
                   choices =c('all' ,label), selected = 'all')
     })
@@ -172,7 +190,19 @@ app_server <- function( input, output, session ) {
   })
   GSVAReactive <- eventReactive(input$startGSVA, {
     withProgress(message = "Processing,please wait",{
-      data_rds = inputDataReactive()$data
+      #data_rds = inputDataReactive()$data
+      if(input$startAnnotion > 0 && !is.null(AnnotionReactive()))
+        data_rds = AnnotionReactive()$data
+      else{
+        data_rds = inputDataReactive()$data
+        filepath = inputDataReactive()$filepath
+        filepath_prefix = substring(filepath, 1, nchar(filepath)-4)
+        if(file.exists(paste0(filepath_prefix, "_meta.csv")))
+        {
+          meta = read.csv(paste0(filepath_prefix, "_meta.csv"))
+          data_rds@meta.data = meta
+        }
+      }
       tryCatch({  
         if(input$celltype=='all')
         {
@@ -180,11 +210,14 @@ app_server <- function( input, output, session ) {
         }
         else
         {
-          new_data_rds = subset(data_rds, idents = input$celltype)
+          new_data_rds = subset(data_rds, subset = pred_cell==input$celltype)
         }
         data_counts = as.matrix(new_data_rds@assays$RNA@data)
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
-        gmt<-getGmt(input$gmtfile$datapath)
+        if(!is.null(input$gmtfile$datapath))
+          gmt<-getGmt(input$gmtfile$datapath)
+        else
+          gmt<-getGmt(system.file('app/www/example/ANGIOGENESIS.gmt', package='scWizard'))
         res_gsva <- GSVA::gsva(data_counts, gmt, kcdf=input$kcdfmethod, mx.diff=input$mxdiff)
         shiny::setProgress(value = 0.8, detail = "Done.")
         return(list("data" = t(res_gsva)))
@@ -247,7 +280,11 @@ app_server <- function( input, output, session ) {
   })
   CCAReactive <- eventReactive(input$startCCA, {
     withProgress(message = "Processing,please wait",{
-      data_rds = inputDataReactive()$data
+      #data_rds = inputDataReactive()$data
+      if(input$startQC > 0)
+        data_rds = QCReactive()$data
+      else
+        data_rds = inputDataReactive()$data
       tryCatch({
         p1 = DimPlot(data_rds, reduction = "tsne",  pt.size = .1,group.by = input$batch)
         ifnb.list <- SplitObject(data_rds, split.by = input$batch)
@@ -266,6 +303,7 @@ app_server <- function( input, output, session ) {
         immune.combined <- FindNeighbors(immune.combined, reduction = "pca", dims = 1:30)
         immune.combined <- FindClusters(immune.combined, resolution = 0.5)
         p2 = DimPlot(immune.combined, reduction = "tsne",  pt.size = .1,group.by = input$batch)
+        
         shiny::setProgress(value = 0.8, detail = "Done.")
         res_plot = p1+p2
         return(list("plot" = res_plot,"data" = immune.combined))
@@ -288,9 +326,17 @@ app_server <- function( input, output, session ) {
     })
   outputOptions(output, 'CCAAvailable', suspendWhenHidden=FALSE)
   output$downloadCCAPlot <- downloadHandler(
-    filename = function()  {'batchplot.pdf'},
+    filename = function()  {'ccaplot.pdf'},
     content = function(file) {
-      ggsave(file,CCAReactive()$plot)
+      pdf(file, width=9, height=4)
+      print(CCAReactive()$plot)
+      dev.off()
+    }
+  )
+  output$downloadCCAData <- downloadHandler(
+    filename = function()  {'data_cca.rds'},
+    content = function(file) {
+      saveRDS(CCAReactive()$data, file = file)
     }
   )
   # harmony
@@ -299,7 +345,11 @@ app_server <- function( input, output, session ) {
   })
   HarmonyReactive <- eventReactive(input$startHarmony, {
     withProgress(message = "Processing,please wait",{
-      data_rds = inputDataReactive()$data
+      #data_rds = inputDataReactive()$data
+      if(input$startQC > 0)
+        data_rds = QCReactive()$data
+      else
+        data_rds = inputDataReactive()$data
       tryCatch({
         p1 = DimPlot(data_rds, reduction = "tsne",  pt.size = .1,group.by = input$batch2)
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
@@ -328,11 +378,17 @@ app_server <- function( input, output, session ) {
     })
   outputOptions(output, 'HarmonyAvailable', suspendWhenHidden=FALSE)
   output$downloadHarmonyPlot <- downloadHandler(
-    filename = function()  {paste0(HarmonyReactive()$data,".pdf")},
+    filename = function()  {"harmony.pdf"},
     content = function(file) {
-      pdf(file)
+      pdf(file, width=9, height=4)
       print(HarmonyReactive()$plot)
       dev.off()}
+  )
+  
+  output$downloadHarmonyData <- downloadHandler(
+    filename = function()  {"data_harmony.rds"},
+    content = function(file) {
+      saveRDS(HarmonyReactive()$data, file = file)}
   )
   
   ### cell annotion
@@ -619,7 +675,26 @@ app_server <- function( input, output, session ) {
   findClusterMarkersReactive <- eventReactive(input$findClusterMarkers, {
     withProgress(message = "Processing,please wait",{
       tryCatch({
-        data_rds = inputDataReactive()$data
+        #data_rds = inputDataReactive()$data
+        if(input$startSubannotion > 0 && !is.null(SubannotionReactive())){
+          data_rds = SubannotionReactive()$data
+          ident(data_rds) = data_rds@meta.data$pred_sub_cell
+        }
+        else if(input$startAnnotion > 0 && !is.null(AnnotionReactive())){
+          data_rds = AnnotionReactive()$data
+          ident(data_rds) = data_rds@meta.data$pred_cell
+        }  
+        else{
+          data_rds = inputDataReactive()$data
+          filepath = inputDataReactive()$filepath
+          filepath_prefix = substring(filepath, 1, nchar(filepath)-4)
+          if(file.exists(paste0(filepath_prefix, "_meta.csv")))
+          {
+            meta = read.csv(paste0(filepath_prefix, "_meta.csv"))
+            data_rds@meta.data = meta
+          }
+          ident(data_rds) = data_rds@meta.data$pred_cell
+        }
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
         if(is.na(input$mindiffpct) && is.na(input$maxcellsperident))
         {
@@ -664,7 +739,7 @@ app_server <- function( input, output, session ) {
   outputOptions(output, 'clusterMarkersAvailable', suspendWhenHidden=FALSE)
   
   output$downloadClusterMarkersCSV <- downloadHandler(
-    filename = function()  {paste0(findClusterMarkersReactive()$data,".csv")},
+    filename = function()  {"markers.csv"},
     content = function(file) {
       write.csv(findClusterMarkersReactive()$data, file, row.names=TRUE)}
   )
@@ -737,8 +812,12 @@ app_server <- function( input, output, session ) {
   # return selectbox
   output$myselectbox3 <-
     renderUI({
-      data_rds = inputDataReactive()$data
-      label=names(summary(data_rds@active.ident))
+      if(input$startAnnotion > 0)
+        data_rds = AnnotionReactive()$data
+      else
+        data_rds = inputDataReactive()$data
+      #label=names(summary(data_rds@active.ident))
+      label=unique(data_rds@meta.data$pred_cell)
       selectInput("celltype", "choose celltype",
                   choices =c('all' ,label), selected = 'all')
     })
@@ -847,7 +926,22 @@ app_server <- function( input, output, session ) {
     withProgress(message = "Processing,please wait",{
       tryCatch({
         library(SCENIC)
-        data_rds = inputDataReactive()$data
+        #data_rds = inputDataReactive()$data
+        if(input$startAnnotion > 0 && !is.null(AnnotionReactive())){
+          data_rds = AnnotionReactive()$data
+          ident(data_rds) = data_rds@meta.data$pred_cell
+        }  
+        else{
+          data_rds = inputDataReactive()$data
+          filepath = inputDataReactive()$filepath
+          filepath_prefix = substring(filepath, 1, nchar(filepath)-4)
+          if(file.exists(paste0(filepath_prefix, "_meta.csv")))
+          {
+            meta = read.csv(paste0(filepath_prefix, "_meta.csv"))
+            data_rds@meta.data = meta
+          }
+          ident(data_rds) = data_rds@meta.data$pred_cell
+        }
         cellalltype = as.vector(data_rds@active.ident)
         cellalltype = as.data.frame(cellalltype)
         meta_data <- cbind(data_rds@meta.data, cellalltype)
@@ -917,16 +1011,32 @@ app_server <- function( input, output, session ) {
   # return selectbox
   output$myselectbox5 <-
     renderUI({
-      data_rds = inputDataReactive()$data
-      label=names(summary(data_rds@active.ident))
-      
+      # data_rds = inputDataReactive()$data
+      # label=names(summary(data_rds@active.ident))
+      if(input$startSubannotion > 0 && !is.null(SubannotionReactive())){
+        data_rds = SubannotionReactive()$data_rds
+        label = unique(data_rds@meta.data$pred_sub_cell)
+      }else if(input$startAnnotion > 0 && !is.null(AnnotionReactive())){
+        data_rds = AnnotionReactive()$data_rds
+        label = unique(data_rds@meta.data$pred_cell)
+      }else{
+        data_rds = inputDataReactive()$data
+        label = unique(data_rds@meta.data$pred_cell)
+      }
       selectInput("celltype", "choose celltype",
                   choices =c('all' ,label), selected = 'all')
     })
   # return selectgroupbox
   output$myselectgroupbox5 <-
     renderUI({
-      data_rds = inputDataReactive()$data
+      #data_rds = inputDataReactive()$data
+      if(input$startSubannotion > 0 && !is.null(SubannotionReactive())){
+        data_rds = SubannotionReactive()$data_rds
+      }else if(input$startAnnotion > 0 && !is.null(AnnotionReactive())){
+        data_rds = AnnotionReactive()$data_rds
+      }else{
+        data_rds = inputDataReactive()$data
+      }
       dt_mat = as.matrix(data_rds@assays$RNA@counts)
       new_dt_mat = dt_mat[which(rowSums(dt_mat)>0),]
       rowName = row.names(new_dt_mat)
@@ -1016,7 +1126,7 @@ app_server <- function( input, output, session ) {
         cellalltype = as.data.frame(cellalltype)
         meta_data <- cbind(rownames(data_rds@meta.data), cellalltype)
         meta_data <- as.matrix(meta_data)
-        meta_data[is.na(meta_data)] = "Unkown" #  细胞类型中不能有NA
+        meta_data[is.na(meta_data)] = "Unkown"
         write.table(meta_data, meta_file, sep='\t', quote=F, row.names=F)
         out_file = as.character(parseDirPath(volumes, input$cellphonedbout))
         counts_data = input$countsdata
