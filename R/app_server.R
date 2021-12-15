@@ -97,7 +97,8 @@ app_server <- function( input, output, session ) {
     withProgress(message = "Processing,please wait",{
       data_rds = inputDataReactive()$data
       tryCatch({
-        data_rds[["percent.mt"]] <- PercentageFeatureSet(data_rds, pattern = "^MT-")
+        if(!("percent.mt" %in% colnames(tmp@meta.data)))
+          data_rds[["percent.mt"]] <- PercentageFeatureSet(data_rds, pattern = "^MT-")
         data_rds <- subset(data_rds, subset = nFeature_RNA>input$featurelow & nFeature_RNA<input$featurehigh & nCount_RNA>input$countlow & nCount_RNA<input$counthigh & percent.mt<input$percent)
         p1 = FeatureScatter(data_rds, feature1 = "nCount_RNA", feature2 = "percent.mt", group.by = 'orig.ident')
         p2 = FeatureScatter(data_rds, feature1 = "nCount_RNA", feature2 = "nFeature_RNA", group.by = 'orig.ident')
@@ -133,7 +134,8 @@ app_server <- function( input, output, session ) {
           data_rds = QCReactive()$data
         else
           data_rds = inputDataReactive()$data
-        data_rds[["percent.mt"]] <- PercentageFeatureSet(data_rds, pattern = "^MT-")
+        if(!("percent.mt" %in% colnames(tmp@meta.data)))
+          data_rds[["percent.mt"]] <- PercentageFeatureSet(data_rds, pattern = "^MT-")
         p = VlnPlot(data_rds, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, group.by = 'orig.ident')
         shiny::setProgress(value = 0.8, detail = "Done.")
         res_plot = p
@@ -678,11 +680,11 @@ app_server <- function( input, output, session ) {
         #data_rds = inputDataReactive()$data
         if(input$startSubannotion > 0 && !is.null(SubannotionReactive())){
           data_rds = SubannotionReactive()$data
-          ident(data_rds) = data_rds@meta.data$pred_sub_cell
+          Idents(data_rds) = data_rds@meta.data$pred_sub_cell
         }
         else if(input$startAnnotion > 0 && !is.null(AnnotionReactive())){
           data_rds = AnnotionReactive()$data
-          ident(data_rds) = data_rds@meta.data$pred_cell
+          Idents(data_rds) = data_rds@meta.data$pred_cell
         }  
         else{
           data_rds = inputDataReactive()$data
@@ -693,7 +695,7 @@ app_server <- function( input, output, session ) {
             meta = read.csv(paste0(filepath_prefix, "_meta.csv"))
             data_rds@meta.data = meta
           }
-          ident(data_rds) = data_rds@meta.data$pred_cell
+          Idents(data_rds) = data_rds@meta.data$pred_cell
         }
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
         if(is.na(input$mindiffpct) && is.na(input$maxcellsperident))
@@ -754,11 +756,13 @@ app_server <- function( input, output, session ) {
   #choose celltype
   output$myselectinfercnvbox <-
     renderUI({
-      if(input$startAnnotion > 0)
-        data_rds = AnnotionReactive()$data
-      else
+      if(input$startAnnotion > 0 && !is.null(AnnotionReactive())){
+        data_rds = AnnotionReactive()$data_rds
+        label = unique(data_rds@meta.data$pred_cell)
+      }else{
         data_rds = inputDataReactive()$data
-      label=names(summary(data_rds@active.ident))
+        label = unique(data_rds@meta.data$pred_cell)
+      }
       selectInput("refgroupnames", "ref_group_names",
                   choices =c(NULL ,label), selected = NULL, multiple = TRUE)
     })
@@ -795,7 +799,7 @@ app_server <- function( input, output, session ) {
       },
       error=function(cond) {
         message("Here's the original error.")
-        #message(cond)
+        message(cond)
         return(NA)
       })
     })
