@@ -2,6 +2,7 @@
 
 export(run_app)
 import(BiocGenerics)
+import(BiocParallel)
 import(DT)
 import(GSEABase)
 import(GSVA)

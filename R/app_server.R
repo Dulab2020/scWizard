@@ -97,7 +97,7 @@ app_server <- function( input, output, session ) {
     withProgress(message = "Processing,please wait",{
       data_rds = inputDataReactive()$data
       tryCatch({
-        if(!("percent.mt" %in% colnames(tmp@meta.data)))
+        if(!("percent.mt" %in% colnames(data_rds@meta.data)))
           data_rds[["percent.mt"]] <- PercentageFeatureSet(data_rds, pattern = "^MT-")
         data_rds <- subset(data_rds, subset = nFeature_RNA>input$featurelow & nFeature_RNA<input$featurehigh & nCount_RNA>input$countlow & nCount_RNA<input$counthigh & percent.mt<input$percent)
         p1 = FeatureScatter(data_rds, feature1 = "nCount_RNA", feature2 = "percent.mt", group.by = 'orig.ident')
@@ -119,6 +119,7 @@ app_server <- function( input, output, session ) {
       },
       error=function(cond) {
         message("Here's the original error.")
+        message(cond)
         return(NULL)
       })
       return(NULL)
@@ -134,7 +135,7 @@ app_server <- function( input, output, session ) {
           data_rds = QCReactive()$data
         else
           data_rds = inputDataReactive()$data
-        if(!("percent.mt" %in% colnames(tmp@meta.data)))
+        if(!("percent.mt" %in% colnames(data_rds@meta.data)))
           data_rds[["percent.mt"]] <- PercentageFeatureSet(data_rds, pattern = "^MT-")
         p = VlnPlot(data_rds, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, group.by = 'orig.ident')
         shiny::setProgress(value = 0.8, detail = "Done.")
