@@ -793,8 +793,8 @@ app_server <- function( input, output, session ) {
                                      cutoff=input$cutoff, # cutoff=1 works well for Smart-seq2, and cutoff=0.1 works well for 10x Genomics
                                      out_dir='./infercnv_res', 
                                      cluster_by_groups=TRUE, 
-                                     denoise=TRUE,
-                                     HMM=TRUE)
+                                     denoise=F,
+                                     HMM=F)
         file.remove('./annofile.txt')
         shiny::setProgress(value = 0.8, detail = "Done.")
       },
