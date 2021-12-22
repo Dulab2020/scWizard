@@ -297,7 +297,8 @@ app_ui <- function(request) {
                                                                          actionButton("startSubannotion","start Subannotion",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%")
                                                                        ),
                                                                        conditionalPanel("output.SubannotionAvailable",
-                                                                                        downloadButton('downloadSubannotionPlot','Save Results as Plot File', class = "btn btn-primary")
+                                                                                        downloadButton('downloadSubannotionPlot','Save Results as Plot File', class = "btn btn-primary"),
+                                                                                        downloadButton('downloadSubannotionData','Save Results as RDS File', class = "btn btn-primary")
                                                                        ),
                                                                        br(),
                                                                        withSpinner(plotOutput(outputId = "SubannotionPlot", height = 700))
@@ -345,8 +346,9 @@ app_ui <- function(request) {
                                                                                               , selected = "Gaussian")),
                                                                          column(4, fileInput('gmtfile', 'Choose gmtFile Containing Data', multiple = TRUE)),
                                                                          column(4, uiOutput("myselectbox2")),
-                                                                         column(4, checkboxInput("mxdiff","mx.diff"), value = TRUE),
                                                                          
+                                                                         column(4, numericInput("workers", "workers", value = 2)),
+                                                                         column(4, checkboxInput("mxdiff","mx.diff"), value = TRUE),
                                                                          div(style = "clear:both;"),
                                                                          actionButton("startGSVA","start GSVA",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%")
                                                                        ),
@@ -537,6 +539,11 @@ app_ui <- function(request) {
                                   tags$div(class = "BoxArea2",
                                            p("Scenic analysis is to study the transcription factors (TFs) in the data of scrna SEQ, and finally screen the TFs with significant regulatory intensity and core role. The results are usually displayed in the form of heat map. Especially in oncology, Scenic analysis can help to find the key 'driver' related to the occurrence and development of tumor, so as to lay the foundation for exploring its pathogenesis."),
                                            p("introduction parameters"),
+                                           p("-minCountsPerGene_1: Minimum counts per gene required"),
+                                           p("-minCountsPerGene_2: Minimum counts per gene required"),
+                                           p("-minSamples: Minimum number of samples (cells) in which the gene should be detected"),
+                                           p("-nCores: Select the parallel parameters according to the computer configuration"),
+                                           p("-org: Select the species to analyze"),
                                            
                                            tabsetPanel(type = "tabs",
                                                        tabPanel("TF-Scenic",
@@ -544,18 +551,16 @@ app_ui <- function(request) {
                                                                 column(12,
                                                                        wellPanel(
                                                                          h4("Set the value of Scenic parameter:"),
-                                                                         # column(4,selectInput("clusterNum", "Cluster Num (ident.1)",
-                                                                         #                      choices = c(1,2,3,4), selected = 1)),
+                                                                         
                                                                          column(4,numericInput("minCountsPerGene1", "minCountsPerGene_1", value = 3)),
                                                                          column(4,numericInput("minCountsPerGene2", "minCountsPerGene_2", value = 0.1)),
                                                                          column(4,numericInput("minSamples", "choose minSamples", value = 0.1)),
+                                                                         column(4,numericInput("nCores", "nCores", value = 4)),
                                                                          column(4,selectInput("org", "choose org",
-                                                                                              choices = c("mgi", "hgnc", "dmel")
+                                                                                              choices = c("mgi", "hgnc")
                                                                                               , selected = "hgnc")),
                                                                          div(style = "clear:both;"),
-                                                                         actionButton("startCoexpression","First start Coexpression",class = "button button-block button-pill button-primary button-large", style = "width: 100%"),
-                                                                         br(),
-                                                                         actionButton("startGRN","Second start GRN",class = "button button-block button-pill button-primary button-large", style = "width: 100%")
+                                                                         actionButton("startScenic","start Scenic",class = "button button-block button-pill button-primary button-large", style = "width: 100%")
                                                                        ),
                                                                        # conditionalPanel("output.TFscenicAvailable",
                                                                        #                  actionButton("startGRN","Second start GRN",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%")

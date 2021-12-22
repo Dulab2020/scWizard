@@ -9,6 +9,7 @@ Authors@R:
 Description: The aim of scWizard is:
 License: GPL(>=3)
 Imports: 
+    arrow,
     config,
     V8,
     BiocGenerics,

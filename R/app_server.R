@@ -29,6 +29,7 @@
 #' @import BiocGenerics
 #' @import BiocParallel
 #' @import pheatmap
+#' @import arrow
 #' @noRd
 app_server <- function( input, output, session ) {
   options(shiny.maxRequestSize=-1) # Remove limit of upload   
@@ -49,6 +50,12 @@ app_server <- function( input, output, session ) {
     }
     if (!is.null(inFile)) {
       seqdata <- readRDS(inFile)
+      filepath_prefix = substring(inFile, 1, nchar(inFile)-4)
+      if(file.exists(paste0(filepath_prefix, "_meta.csv")))
+      {
+        meta = read.csv(paste0(filepath_prefix, "_meta.csv"))
+        seqdata@meta.data = meta
+      }
       print('uploaded seqdata')
       shiny::validate(need(ncol(seqdata)>1,
                            message="File appears to be one column. Check that it is a comma or tab delimited file."))
@@ -112,6 +119,7 @@ app_server <- function( input, output, session ) {
         data_rds <- RunTSNE(data_rds, dims = 1:30)
         filepath = inputDataReactive()$filepath
         filepath_prefix = substring(filepath, 1, nchar(filepath)-4)
+        print(paste0(filepath_prefix, "_qc.rds"))
         saveRDS(data_rds, paste0(filepath_prefix, "_qc.rds"))
         shiny::setProgress(value = 0.8, detail = "Done.")
         res_plot = p1+p2
@@ -176,13 +184,6 @@ app_server <- function( input, output, session ) {
         data_rds = AnnotionReactive()$data
       else{
         data_rds = inputDataReactive()$data
-        filepath = inputDataReactive()$filepath
-        filepath_prefix = substring(filepath, 1, nchar(filepath)-4)
-        if(file.exists(paste0(filepath_prefix, "_meta.csv")))
-        {
-          meta = read.csv(paste0(filepath_prefix, "_meta.csv"))
-          data_rds@meta.data = meta
-        }
       }
       label=unique(data_rds@meta.data$pred_cell)
       selectInput("celltype", "choose celltype",
@@ -198,13 +199,6 @@ app_server <- function( input, output, session ) {
         data_rds = AnnotionReactive()$data
       else{
         data_rds = inputDataReactive()$data
-        filepath = inputDataReactive()$filepath
-        filepath_prefix = substring(filepath, 1, nchar(filepath)-4)
-        if(file.exists(paste0(filepath_prefix, "_meta.csv")))
-        {
-          meta = read.csv(paste0(filepath_prefix, "_meta.csv"))
-          data_rds@meta.data = meta
-        }
       }
       tryCatch({  
         if(input$celltype=='all')
@@ -221,7 +215,7 @@ app_server <- function( input, output, session ) {
           gmt<-getGmt(input$gmtfile$datapath)
         else
           gmt<-getGmt(system.file('app/www/example/ANGIOGENESIS.gmt', package='scWizard'))
-        res_gsva <- GSVA::gsva(data_counts, gmt, kcdf=input$kcdfmethod, mx.diff=input$mxdiff)
+        res_gsva <- GSVA::gsva(data_counts, gmt, kcdf=input$kcdfmethod, mx.diff=input$mxdiff, BPPARAM=SnowParam(workers = input$workers,progressbar=T),verbose=T)
         shiny::setProgress(value = 0.8, detail = "Done.")
         return(list("data" = t(res_gsva)))
       },
@@ -243,7 +237,7 @@ app_server <- function( input, output, session ) {
     })
   outputOptions(output, 'GSVAAvailable', suspendWhenHidden=FALSE)
   output$downloadGSVACSV <- downloadHandler(
-    filename = function()  {paste0(GSVAReactive()$data,".csv")},
+    filename = function()  {"res_gsva.csv"},
     content = function(file) {
       write.csv(GSVAReactive()$data, file, row.names=TRUE)}
   )
@@ -286,7 +280,7 @@ app_server <- function( input, output, session ) {
       #data_rds = inputDataReactive()$data
       if(input$startQC > 0)
         data_rds = QCReactive()$data
-      else
+      else0
         data_rds = inputDataReactive()$data
       tryCatch({
         p1 = DimPlot(data_rds, reduction = "tsne",  pt.size = .1,group.by = input$batch)
@@ -431,7 +425,7 @@ app_server <- function( input, output, session ) {
       },
       error=function(cond) {
         message("Here's the original error.")
-        message(cond)
+        #message(cond)
         return(NA)
       })
     })
@@ -468,6 +462,12 @@ app_server <- function( input, output, session ) {
         res_celltype=get_BP3_res(X_total_path, Y_total$celltype, X_verify, num_classes, input$PCAk, input$layer1, input$regularization, input$learning)
         data_rds@meta.data$pred_cell = res_celltype
         res_plot = DimPlot(data_rds,reduction = "tsne",pt.size = .1,group.by = 'pred_cell')
+        
+        filepath = inputDataReactive()$filepath
+        filepath_prefix = substring(filepath, 1, nchar(filepath)-4)
+        print(paste0(filepath_prefix, "_qc.rds"))
+        write(data_rds@meta.data, paste0(filepath_prefix, "_meta.csv"))
+        
         shiny::setProgress(value = 0.8, detail = "Done.")
         return(list("data" = res_plot, "data_rds" = data_rds))
       },
@@ -550,7 +550,7 @@ app_server <- function( input, output, session ) {
       },
       error=function(cond) {
         message("Here's the original error.")
-        message(cond)
+        #message(cond)
         return(NULL)
       })
     })
@@ -635,12 +635,13 @@ app_server <- function( input, output, session ) {
         data_rds <- RenameIdents(data_rds, res_celltype)
         data_rds@meta.data$pred_sub_cell = as.vector(data_rds@active.ident)
         res_plot = DimPlot(data_rds,reduction = "tsne",pt.size = .1,group.by = 'pred_sub_cell')
+        
         shiny::setProgress(value = 0.8, detail = "Done.")
-        return(list("data" = res_plot, "data_rds" = data_rds))
+        return(list("plot" = res_plot, "data" = data_rds))
       },
       error=function(cond){
         message("Here's the original error.")
-        message(cond)
+        #message(cond)
         return(NULL)
       })
       
@@ -649,7 +650,7 @@ app_server <- function( input, output, session ) {
   output$SubannotionPlot <- renderPlot({
     tmp <- SubannotionReactive()
     if(!is.null(tmp)){
-      tmp$data
+      tmp$plot
     }
   })
   output$SubannotionAvailable <-
@@ -661,8 +662,13 @@ app_server <- function( input, output, session ) {
     filename = function()  {'plot_pred_sub_cell.pdf'},
     content = function(file) {
       pdf(file)
-      print(SubannotionReactive()$data)
+      print(SubannotionReactive()$plot)
       dev.off()}
+  )
+  output$downloadSubannotionData <- downloadHandler(
+    filename = function()  {'data_pred_sub_cell.rds'},
+    content = function(file) {
+      saveRDS(SubannotionReactive()$data, file = file)}
   )
   
   ### Find markers
@@ -800,7 +806,7 @@ app_server <- function( input, output, session ) {
       },
       error=function(cond) {
         message("Here's the original error.")
-        message(cond)
+        #message(cond)
         return(NA)
       })
     })
@@ -893,7 +899,7 @@ app_server <- function( input, output, session ) {
       },
       error=function(cond) {
         message("Here's the original error.")
-        message(cond)
+        #message(cond)
         return(NULL)
       })
     })
@@ -912,7 +918,9 @@ app_server <- function( input, output, session ) {
   output$downloadMonocleRDS <- downloadHandler(
     filename = function()  {"res_moncle.pdf"},
     content = function(file) {
-      saveRDS(MonocleReactive()$plot, file)}
+      pdf(file, width=14,height=14)
+      print(MonocleReactive()$plot)
+      dev.off()}
   )
   
   
@@ -924,44 +932,48 @@ app_server <- function( input, output, session ) {
     }
   })
   observe({
-    startCoexpressionReactive()
-    startGRNReactive()
+    startScenicReactive()
   })
-  startCoexpressionReactive <- eventReactive(input$startCoexpression, {
+  startScenicReactive <- eventReactive(input$startScenic, {
     withProgress(message = "Processing,please wait",{
       tryCatch({
         library(SCENIC)
-        #data_rds = inputDataReactive()$data
-        if(input$startAnnotion > 0 && !is.null(AnnotionReactive())){
+        if(input$startSubannotion > 0 && !is.null(SubannotionReactive())){
+          data_rds = SubannotionReactive()$data
+        }
+        else if(input$startAnnotion > 0 && !is.null(AnnotionReactive())){
           data_rds = AnnotionReactive()$data
-          ident(data_rds) = data_rds@meta.data$pred_cell
-        }  
+        }
         else{
           data_rds = inputDataReactive()$data
-          filepath = inputDataReactive()$filepath
-          filepath_prefix = substring(filepath, 1, nchar(filepath)-4)
-          if(file.exists(paste0(filepath_prefix, "_meta.csv")))
-          {
-            meta = read.csv(paste0(filepath_prefix, "_meta.csv"))
-            data_rds@meta.data = meta
-          }
-          ident(data_rds) = data_rds@meta.data$pred_cell
         }
-        cellalltype = as.vector(data_rds@active.ident)
-        cellalltype = as.data.frame(cellalltype)
-        meta_data <- cbind(data_rds@meta.data, cellalltype)
-        cellInfo = meta_data[,c(7,2,3)]
+        meta_data = data_rds@meta.data
+        if(length(unique(meta_data$pred_cell))==1)
+          cellInfo = meta_data[,c("pred_sub_cell","nCount_RNA","nFeature_RNA")]
+        else
+          cellInfo = meta_data[,c("pred_cell","nCount_RNA","nFeature_RNA")]
         colnames(cellInfo)=c('CellType', 'nGene' ,'nUMI')
+        if(!dir.exists("./int"))
+          dir.create("./int")
         saveRDS(cellInfo,"./int/cellInfo.RDS")
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
         # init
         exprMat <- as.matrix(data_rds@assays$RNA@counts)
         exprMat <- exprMat[which(rowSums(exprMat)>0),]
         mydbDIR <- "./cisTarget"
-        mydbs <- c("hg19-500bp-upstream-7species.mc9nr.feather",
-                  "hg19-tss-centered-10kb-7species.mc9nr.feather")
+        if(input$org == 'hgnc')
+        {
+          mydbs <- c("hg19-500bp-upstream-7species.mc9nr.feather",
+                     "hg19-tss-centered-10kb-7species.mc9nr.feather")
+        }
+        else if(input$org == 'mgi')
+        {
+          mydbs <- c("mm9-500bp-upstream-7species.mc9nr.feather",
+                     "mm9-tss-centered-10kb-7species.mc9nr.feather")
+        }
+        
         names(mydbs) <- c("500bp", "10kb")
-        scenicOptions <- initializeScenic(org=input$org, dbDir=mydbDIR, dbs = mydbs, nCores=1)
+        scenicOptions <- initializeScenic(org=input$org, dbDir=mydbDIR, dbs = mydbs, nCores=input$nCores)
         saveRDS(scenicOptions, "./int/scenicOptions.rds")
         # build co-expression net
         genesKept <- geneFiltering(exprMat, scenicOptions, 
@@ -970,7 +982,13 @@ app_server <- function( input, output, session ) {
         exprMat_filtered <- exprMat[genesKept, ]
         runCorrelation(exprMat_filtered, scenicOptions)
         exprMat_filtered_log <- log2(exprMat_filtered+1)
-        runGenie3(exprMat_filtered_log, scenicOptions)
+        runGenie3(exprMat_filtered_log, scenicOptions, nParts=5)
+        scenicOptions <- runSCENIC_1_coexNetwork2modules(scenicOptions)
+        scenicOptions <- runSCENIC_2_createRegulons(scenicOptions,coexMethod=c("top5perTarget")) # Toy run settings
+        library(doParallel)
+        scenicOptions <- runSCENIC_3_scoreCells(scenicOptions, exprMat_filtered_log) 
+        scenicOptions <- runSCENIC_4_aucell_binarize(scenicOptions)
+        tsneAUC(scenicOptions, aucType="AUC")
       },
       error=function(cond) {
         message("Here's the original error.")
@@ -979,33 +997,7 @@ app_server <- function( input, output, session ) {
       })
     })
   })
-  startGRNReactive <- eventReactive(input$startGRN, {
-    withProgress(message = "Processing,please wait",{
-      tryCatch({
-        data_rds = inputDataReactive()$data
-        exprMat <- as.matrix(data_rds@assays$RNA@counts)
-        exprMat <- exprMat[which(rowSums(exprMat)>0),]
-        shiny::setProgress(value = 0.4, detail = "Calculating ...")
-        # Build and score the GRN
-        scenicOptions <- readRDS("./int/scenicOptions.rds")
-        exprMat_log <- log2(exprMat+1)
-        scenicOptions@settings$dbs <- scenicOptions@settings$dbs["10kb"]
-        scenicOptions <- runSCENIC_1_coexNetwork2modules(scenicOptions)
-        scenicOptions <- runSCENIC_2_createRegulons(scenicOptions,
-                                                    coexMethod=c("top5perTarget")) # Toy run settings
-        library(doParallel)
-        scenicOptions <- runSCENIC_3_scoreCells(scenicOptions, exprMat_log ) 
-        scenicOptions <- runSCENIC_4_aucell_binarize(scenicOptions)
-        tsneAUC(scenicOptions, aucType="AUC") # choose settings
-        #motifEnrichment_selfMotifs_wGenes <- loadInt(scenicOptions, "motifEnrichment_selfMotifs_wGenes") 
-      },
-      error=function(cond) {
-        message("Here's the original error.")
-        return(NULL)
-      })
-    })
-  })
- 
+  
   ### Correlation
   observe({
     if(!is.null(inputDataReactive()))
@@ -1247,16 +1239,17 @@ app_server <- function( input, output, session ) {
         }
         else if(input$methodsUsed=='Cor')
         {
-          cor_dt = read.csv(input$plotfile$datapath)
-          cor_dt = cor_dt[-1,-1]
+          cor_dt = read.csv(input$plotfile1$datapath)
           cor_dt_matrix = data.matrix(cor_dt)
-          res_plot = heatmap(cor_dt_matrix, Rowv=NA, Colv=NA, col=cm.colors(256), revC=TRUE, scale='column')
+          res_plot = pheatmap(cor_dt_matrix, show_rownames = T, show_colnames = T)
+          #res_plot = heatmap(cor_dt_matrix, Rowv=NA, Colv=NA, col=cm.colors(256), revC=TRUE, scale='column')
         }
         shiny::setProgress(value = 0.8, detail = "Done.")
         return(list("data" = res_plot))
       },
       error=function(cond) {
         message("Here's the original error.")
+        message(cond)
         return(NULL)
       })
     })
