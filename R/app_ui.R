@@ -121,7 +121,9 @@ app_ui <- function(request) {
                                                                          actionButton("viewQC","View quality",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%"),
                                                                          actionButton("startQC","start QC",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%")
                                                                        ),
-                                                                       
+                                                                       conditionalPanel("output.QCAvailable",
+                                                                                        downloadButton('downloadQCData','Save Results as rds File', class = "btn btn-primary")
+                                                                       ),
                                                                        br(),
                                                                        withSpinner(plotOutput(outputId = "viewPlot", height = 350)),
                                                                        withSpinner(plotOutput(outputId = "QCPlot", height = 350))
@@ -256,7 +258,8 @@ app_ui <- function(request) {
                                                                          actionButton("startAnnotion","start Annotion",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%")
                                                                        ),
                                                                        conditionalPanel("output.AnnotionAvailable",
-                                                                                        downloadButton('downloadAnnotionPlot','Save Results as Plot File', class = "btn btn-primary")
+                                                                                        downloadButton('downloadAnnotionPlot','Save Results as Plot File', class = "btn btn-primary"),
+                                                                                        downloadButton('downloadAnnotionData','Save Results as Rds File', class = "btn btn-primary")
                                                                        ),
                                                                        br(),
                                                                        withSpinner(plotOutput(outputId = "AnnotionPlot", height = 700))

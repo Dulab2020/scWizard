@@ -47,6 +47,7 @@ app_server <- function( input, output, session ) {
     }
     else{
       inFile = input$datafile$datapath
+      print(input$datafile)
     }
     if (!is.null(inFile)) {
       seqdata <- readRDS(inFile)
@@ -117,10 +118,7 @@ app_server <- function( input, output, session ) {
         data_rds <- FindNeighbors(data_rds, dims = 1:30)
         data_rds <- FindClusters(data_rds, resolution = 0.32)
         data_rds <- RunTSNE(data_rds, dims = 1:30)
-        filepath = inputDataReactive()$filepath
-        filepath_prefix = substring(filepath, 1, nchar(filepath)-4)
-        print(paste0(filepath_prefix, "_qc.rds"))
-        saveRDS(data_rds, paste0(filepath_prefix, "_qc.rds"))
+        
         shiny::setProgress(value = 0.8, detail = "Done.")
         res_plot = p1+p2
         return(list("plot" = res_plot,"data" = data_rds))
@@ -169,7 +167,17 @@ app_server <- function( input, output, session ) {
       tmp$plot
     }
   })
-   
+  output$QCAvailable <-
+    reactive({
+      return(!is.null(QCReactive()$data))
+    })
+  outputOptions(output, 'QCAvailable', suspendWhenHidden=FALSE)
+  output$downloadQCData <- downloadHandler(
+    filename = function()  {"data_qc.rds"},
+    content = function(file) {
+      saveRDS(QCReactive()$data, file = file)}
+  )
+  
   ### GSVA
   observe({
     if(!is.null(inputDataReactive()))
@@ -473,7 +481,7 @@ app_server <- function( input, output, session ) {
       },
       error=function(cond) {
         message("Here's the original error.")
-        message(cond)
+        #message(cond)
         return(NA)
       })
     })
@@ -495,6 +503,11 @@ app_server <- function( input, output, session ) {
       pdf(file)
       print(AnnotionReactive()$data)
       dev.off()}
+  )
+  output$downloadAnnotionData <- downloadHandler(
+    filename = function()  {'data_pred_cell.rds'},
+    content = function(file) {
+      saveRDS(AnnotionReactive()$data_rds, file = file)}
   )
   
   # return selectbox
