@@ -125,7 +125,7 @@ app_server <- function( input, output, session ) {
       },
       error=function(cond) {
         message("Here's the original error.")
-        message(cond)
+        #message(cond)
         return(NULL)
       })
       return(NULL)
@@ -470,11 +470,6 @@ app_server <- function( input, output, session ) {
         res_celltype=get_BP3_res(X_total_path, Y_total$celltype, X_verify, num_classes, input$PCAk, input$layer1, input$regularization, input$learning)
         data_rds@meta.data$pred_cell = res_celltype
         res_plot = DimPlot(data_rds,reduction = "tsne",pt.size = .1,group.by = 'pred_cell')
-        
-        filepath = inputDataReactive()$filepath
-        filepath_prefix = substring(filepath, 1, nchar(filepath)-4)
-        print(paste0(filepath_prefix, "_qc.rds"))
-        write(data_rds@meta.data, paste0(filepath_prefix, "_meta.csv"))
         
         shiny::setProgress(value = 0.8, detail = "Done.")
         return(list("data" = res_plot, "data_rds" = data_rds))
