@@ -288,7 +288,7 @@ app_server <- function( input, output, session ) {
       #data_rds = inputDataReactive()$data
       if(input$startQC > 0)
         data_rds = QCReactive()$data
-      else0
+      else
         data_rds = inputDataReactive()$data
       tryCatch({
         p1 = DimPlot(data_rds, reduction = "tsne",  pt.size = .1,group.by = input$batch)
