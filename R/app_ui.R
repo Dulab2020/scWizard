@@ -62,13 +62,21 @@ app_ui <- function(request) {
                                       
                                       radioButtons('data_file_type','Use example file or upload your own data',
                                                    c(
+                                                     'Data-counts'='data_counts',
+                                                     'Data-10X'="data_10X",
                                                      'Data-rds'="data_rds",
                                                      'Data-example'="data_example"
                                                    ),selected = "data_example"),
                                       
-                                      conditionalPanel(condition="input.data_file_type=='data_rds'",
+                                      conditionalPanel(condition="input.data_file_type=='data_10X'",
+                                                       shinyDirButton("data_10X_folder", "Choose a 10X_folder" ,
+                                                                      title = "",
+                                                                      buttonType = "default", class = NULL,
+                                                                      icon = icon("folder", lib = "font-awesome"), multiple = F)                       
+                                      ),
+                                      conditionalPanel(condition="input.data_file_type=='data_rds'&&input.data_file_type!='data_10X'",
                                                        p("please input .rds file"),
-                                                       fileInput('datafile', 'Choose File(s) Containing Data', multiple = TRUE)
+                                                       fileInput('datafile', 'Choose File(s) Containing Data', multiple = F)
                                       )
                                   )
                                   
@@ -180,6 +188,7 @@ app_ui <- function(request) {
                                                                          column(4, uiOutput("myselectboxbatch")),
                                                                          
                                                                          div(style = "clear:both;"),
+                                                                         actionButton("viewBatch1","View Batch",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%"),
                                                                          actionButton("startCCA","start CCA",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%")
                                                                        ),
                                                                        conditionalPanel("output.CCAAvailable",
@@ -187,6 +196,7 @@ app_ui <- function(request) {
                                                                                         downloadButton('downloadCCAData','Save Results as rds File', class = "btn btn-primary")
                                                                        ),
                                                                        br(),
+                                                                       withSpinner(plotOutput(outputId = "viewBatch1Plot", height = 350, width = 350)),
                                                                        withSpinner(plotOutput(outputId = "CCAPlot", height = 350))
                                                                 ),
                                                                 tags$div(class = "clearBoth")
@@ -201,6 +211,7 @@ app_ui <- function(request) {
                                                                          column(4,numericInput("dimsuse", "dims.use", value = 2000)),
                                                                          column(4,uiOutput("myselectboxbatch2")),
                                                                          div(style = "clear:both;"),
+                                                                         actionButton("viewBatch2","View Batch",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%"),
                                                                          actionButton("startHarmony","start Harmony",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%")
                                                                        ),
                                                                        conditionalPanel("output.HarmonyAvailable",
@@ -208,6 +219,7 @@ app_ui <- function(request) {
                                                                                         downloadButton('downloadHarmonyData','Save Results as rds File', class = "btn btn-primary")
                                                                        ),
                                                                        br(),
+                                                                       withSpinner(plotOutput(outputId = "viewBatch2Plot", height = 350, width = 350)),
                                                                        withSpinner(plotOutput(outputId = "HarmonyPlot", height = 350))
                                                                 ),
                                                                 tags$div(class = "clearBoth")
@@ -253,9 +265,17 @@ app_ui <- function(request) {
                                                                          column(4,numericInput("layer1", "Number of hidden layer1 nodes", value = 100)),
                                                                          column(4,numericInput("regularization", "Regularization rate", value = 0.05)),
                                                                          column(4,numericInput("PCAk", "PCA.k", value = 200)),
+                                                                         column(4, checkboxInput("ownstrainset","Use Custom Trainset"), value = FALSE),
                                                                          div(style = "clear:both;"),
                                                                          actionButton("installPython","install Python",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%"),
                                                                          actionButton("startAnnotion","start Annotion",class = "button button-3d button-block button-pill button-primary button-large", style = "width: 100%")
+                                                                       ),
+                                                                       conditionalPanel("input.ownstrainset",
+                                                                                        wellPanel(
+                                                                                          column(6,fileInput('trainset', 'Choose custom trainset', multiple = TRUE)),
+                                                                                          column(6,fileInput('trainlabel', 'Choose custom label for trainset', multiple = TRUE)),
+                                                                                          div(style = "clear:both;")
+                                                                                        )
                                                                        ),
                                                                        conditionalPanel("output.AnnotionAvailable",
                                                                                         downloadButton('downloadAnnotionPlot','Save Results as Plot File', class = "btn btn-primary"),

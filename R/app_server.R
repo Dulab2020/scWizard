@@ -35,9 +35,10 @@ app_server <- function( input, output, session ) {
   options(shiny.maxRequestSize=-1) # Remove limit of upload   
   options(shiny.deprecation.messages=F)   
   options(warn =-1)
-  
+  volumes = getVolumes()()
   ### input data
   observe({
+    shinyDirChoose(input, "data_10X_folder", roots = volumes)
     inputDataReactive()
   })
   inputDataReactive <- reactive({
@@ -49,8 +50,50 @@ app_server <- function( input, output, session ) {
       inFile = input$datafile$datapath
       print(input$datafile)
     }
-    if (!is.null(inFile)) {
-      seqdata <- readRDS(inFile)
+    if (!is.null(inFile)||!is.null(input$data_10X_folder)) {
+      #seqdata <- readRDS(inFile)
+      if(input$data_file_type == "data_rds")
+      {
+        seqdata <- readRDS(inFile)
+      }
+      else if(input$data_file_type == "data_counts")
+      {
+        parts<-strsplit(inFile,".",fixed = TRUE)
+        nparts<-length(parts[[1]])
+        suff<-parts[[1]][nparts]
+        if(suff == 'csv')
+          seqdata <- read.csv(inFile, row.names = 1)
+        else if(suff == 'rds')
+          seqdata <- readRDS(inFile)
+        else if(suff == 'h5')
+          seqdata <- Read10X_h5(inFile)
+        seqdata = CreateSeuratObject(counts = seqdata, min.cells = 3, min.features = 200)
+        seqdata <- NormalizeData(seqdata, normalization.method = "LogNormalize", scale.factor = 10000)
+        seqdata <- FindVariableFeatures(seqdata, selection.method = "vst", nfeatures = 2000)
+        seqdata <- ScaleData(seqdata, features = rownames(seqdata))
+        seqdata <- RunPCA(seqdata, features = VariableFeatures(object = seqdata))
+        seqdata <- FindNeighbors(seqdata, dims = 1:30)
+        seqdata <- FindClusters(seqdata, resolution = 0.5)
+        seqdata <- RunUMAP(seqdata, dims = 1:30)
+      }
+      else if(input$data_file_type == "data_10X")
+      {
+        print(as.character(parseDirPath(volumes, input$data_10X_folder)))
+        print(parseDirPath(volumes, input$data_10X_folder))
+        print(input$data_10X_folder)
+        
+        seqdata <- Read10X(as.character(parseDirPath(volumes, input$data_10X_folder)))
+        seqdata = CreateSeuratObject(counts = seqdata, min.cells = 3, min.features = 200)
+        seqdata <- NormalizeData(seqdata, normalization.method = "LogNormalize", scale.factor = 10000)
+        seqdata <- FindVariableFeatures(seqdata, selection.method = "vst", nfeatures = 2000)
+        seqdata <- ScaleData(seqdata, features = rownames(seqdata))
+        seqdata <- RunPCA(seqdata, features = VariableFeatures(object = seqdata))
+        seqdata <- FindNeighbors(seqdata, dims = 1:30)
+        seqdata <- FindClusters(seqdata, resolution = 0.5)
+        seqdata <- RunUMAP(seqdata, dims = 1:30)
+      }
+      else
+        seqdata <- readRDS(inFile)
       filepath_prefix = substring(inFile, 1, nchar(inFile)-4)
       if(file.exists(paste0(filepath_prefix, "_meta.csv")))
       {
@@ -117,7 +160,7 @@ app_server <- function( input, output, session ) {
         data_rds <- RunPCA(data_rds, features = VariableFeatures(object = data_rds))
         data_rds <- FindNeighbors(data_rds, dims = 1:30)
         data_rds <- FindClusters(data_rds, resolution = 0.32)
-        data_rds <- RunTSNE(data_rds, dims = 1:30)
+        data_rds <- RunUMAP(data_rds, dims = 1:30)
         
         shiny::setProgress(value = 0.8, detail = "Done.")
         res_plot = p1+p2
@@ -279,6 +322,66 @@ app_server <- function( input, output, session ) {
       selectInput("batch2", "choose batch",
                   choices =c(' ' ,label), selected = ' ')
     })
+  # viewBatch
+  observe({
+    viewBatch1Reactive()
+  })
+  viewBatch1Reactive <- eventReactive(input$viewBatch1, {
+    withProgress(message = "Processing,please wait",{
+      tryCatch({
+        if(input$startQC > 0)
+          data_rds = QCReactive()$data
+        else
+          data_rds = inputDataReactive()$data
+        
+        p = DimPlot(data_rds, reduction = "umap",  pt.size = .1,group.by = input$batch)
+        shiny::setProgress(value = 0.8, detail = "Done.")
+        res_plot = p
+        return(list("plot" = res_plot))
+      },
+      error=function(cond) {
+        message("Here's the original error.")
+        return(NULL)
+      })
+      return(NULL)
+    })
+  })
+  
+  observe({
+    viewBatch2Reactive()
+  })
+  viewBatch2Reactive <- eventReactive(input$viewBatch2, {
+    withProgress(message = "Processing,please wait",{
+      tryCatch({
+        if(input$startQC > 0)
+          data_rds = QCReactive()$data
+        else
+          data_rds = inputDataReactive()$data
+        p = DimPlot(data_rds, reduction = "umap",  pt.size = .1,group.by = input$batch2)
+        shiny::setProgress(value = 0.8, detail = "Done.")
+        res_plot = p
+        return(list("plot" = res_plot))
+      },
+      error=function(cond) {
+        message("Here's the original error.")
+        return(NULL)
+      })
+      return(NULL)
+    })
+  })
+  output$viewBatch1Plot <- renderPlot({
+    tmp <- viewBatch1Reactive()
+    if(!is.null(tmp)){
+      tmp$plot
+    }
+  })
+  output$viewBatch2Plot <- renderPlot({
+    tmp <- viewBatch2Reactive()
+    if(!is.null(tmp)){
+      tmp$plot
+    }
+  })
+  
   # CCA
   observe({
     CCAReactive()
@@ -291,7 +394,7 @@ app_server <- function( input, output, session ) {
       else
         data_rds = inputDataReactive()$data
       tryCatch({
-        p1 = DimPlot(data_rds, reduction = "tsne",  pt.size = .1,group.by = input$batch)
+        p1 = DimPlot(data_rds, reduction = "umap",  pt.size = .1,group.by = input$batch)
         ifnb.list <- SplitObject(data_rds, split.by = input$batch)
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
         ifnb.list <- lapply(X = ifnb.list, FUN = function(x) {
@@ -304,10 +407,10 @@ app_server <- function( input, output, session ) {
         DefaultAssay(immune.combined) <- "integrated"
         immune.combined <- ScaleData(immune.combined, verbose = FALSE)
         immune.combined <- RunPCA(immune.combined, npcs = 30, verbose = FALSE)
-        immune.combined <- RunTSNE(immune.combined, reduction = "pca", dims = 1:30)
+        immune.combined <- RunUMAP(immune.combined, reduction = "pca", dims = 1:30)
         immune.combined <- FindNeighbors(immune.combined, reduction = "pca", dims = 1:30)
         immune.combined <- FindClusters(immune.combined, resolution = 0.5)
-        p2 = DimPlot(immune.combined, reduction = "tsne",  pt.size = .1,group.by = input$batch)
+        p2 = DimPlot(immune.combined, reduction = "umap",  pt.size = .1,group.by = input$batch)
         
         shiny::setProgress(value = 0.8, detail = "Done.")
         res_plot = p1+p2
@@ -356,11 +459,11 @@ app_server <- function( input, output, session ) {
       else
         data_rds = inputDataReactive()$data
       tryCatch({
-        p1 = DimPlot(data_rds, reduction = "tsne",  pt.size = .1,group.by = input$batch2)
+        p1 = DimPlot(data_rds, reduction = "umap",  pt.size = .1,group.by = input$batch2)
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
         data_rds <- data_rds %>% RunHarmony(input$batch2, plot_convergence = TRUE)
-        data_rds <- RunTSNE(data_rds,reduction = "harmony", dims = 1:30)
-        p2 = DimPlot(data_rds, reduction = "tsne",  pt.size = .1,group.by = input$batch2)
+        data_rds <- RunUMAP(data_rds,reduction = "harmony", dims = 1:30)
+        p2 = DimPlot(data_rds, reduction = "umap",  pt.size = .1,group.by = input$batch2)
         shiny::setProgress(value = 0.8, detail = "Done.")
         res_plot = p1+p2
         return(list("plot" = res_plot, "data" = data_rds))
@@ -456,9 +559,16 @@ app_server <- function( input, output, session ) {
         else
           data_rds = inputDataReactive()$data
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
-        X_total_path=system.file('app/www/python/trainset/trainx_all.h5', package='scWizard')
-        
-        Y_total=read.csv(system.file('app/www/python/trainset/trainy_all.csv', package='scWizard'))
+        if(input$ownstrainset)
+        {
+          X_total_path=input$trainset$datapath
+          Y_total=read.csv(input$trainlabel$datapath)
+        }
+        else
+        {
+          X_total_path=system.file('app/www/python/trainset/trainx_all.h5', package='scWizard')
+          Y_total=read.csv(system.file('app/www/python/trainset/trainy_all.csv', package='scWizard'))
+        }
         Y_total$X=NULL
         colnames(Y_total)=c('celltype')
         num_classes = length(unique(Y_total$celltype))
@@ -469,7 +579,7 @@ app_server <- function( input, output, session ) {
         print(head(Y_total))
         res_celltype=get_BP3_res(X_total_path, Y_total$celltype, X_verify, num_classes, input$PCAk, input$layer1, input$regularization, input$learning)
         data_rds@meta.data$pred_cell = res_celltype
-        res_plot = DimPlot(data_rds,reduction = "tsne",pt.size = .1,group.by = 'pred_cell')
+        res_plot = DimPlot(data_rds,reduction = "umap",pt.size = .1,group.by = 'pred_cell')
         
         shiny::setProgress(value = 0.8, detail = "Done.")
         return(list("data" = res_plot, "data_rds" = data_rds))
@@ -551,8 +661,8 @@ app_server <- function( input, output, session ) {
         tmp_data <- RunPCA(tmp_data, features = VariableFeatures(object = tmp_data), npcs=30)
         tmp_data <- FindNeighbors(tmp_data, dims = 1:30)
         tmp_data <- FindClusters(tmp_data, resolution = input$resolution)
-        tmp_data <- RunTSNE(tmp_data, dims = 1:30, perplexity=5)
-        res_plot = DimPlot(tmp_data,reduction = "tsne",pt.size = .1)
+        tmp_data <- RunUMAP(tmp_data, dims = 1:30, perplexity=5)
+        res_plot = DimPlot(tmp_data,reduction = "umap",pt.size = .1)
         shiny::setProgress(value = 0.8, detail = "Done.")
         return(list("data" = res_plot, "tmp_data" = tmp_data))
       },
@@ -642,7 +752,7 @@ app_server <- function( input, output, session ) {
         names(res_celltype) <- levels(data_rds)
         data_rds <- RenameIdents(data_rds, res_celltype)
         data_rds@meta.data$pred_sub_cell = as.vector(data_rds@active.ident)
-        res_plot = DimPlot(data_rds,reduction = "tsne",pt.size = .1,group.by = 'pred_sub_cell')
+        res_plot = DimPlot(data_rds,reduction = "umap",pt.size = .1,group.by = 'pred_sub_cell')
         
         shiny::setProgress(value = 0.8, detail = "Done.")
         return(list("plot" = res_plot, "data" = data_rds))
@@ -996,7 +1106,7 @@ app_server <- function( input, output, session ) {
         library(doParallel)
         scenicOptions <- runSCENIC_3_scoreCells(scenicOptions, exprMat_filtered_log) 
         scenicOptions <- runSCENIC_4_aucell_binarize(scenicOptions)
-        tsneAUC(scenicOptions, aucType="AUC")
+        umapAUC(scenicOptions, aucType="AUC")
       },
       error=function(cond) {
         message("Here's the original error.")
