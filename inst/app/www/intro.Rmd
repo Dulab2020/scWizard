@@ -27,11 +27,14 @@ This application accepts the following types of input data:
 
 - For demo purposes, you can select "Example data"
 
-- That will automatically load the RDS data
+- That will automatically load the Seurat object data
 
-### 2. Upload your own data (.rds):
+### 2. Upload your own data:
 
-- You can choose local file upload, but it must be in RDS format
+- You can choose local file upload
+    * 'Data-rds':The input data is a Seurat object
+    * 'Data-counts':The input data is the counts matrix, the rows are genes, and the columns are samples. Support multiple formats:csv, rds, and h5
+    * 'Data-10X':The input is a folder
 
 ## **Run Results**
 ---

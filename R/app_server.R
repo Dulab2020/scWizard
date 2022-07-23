@@ -48,7 +48,7 @@ app_server <- function( input, output, session ) {
     }
     else{
       inFile = input$datafile$datapath
-      print(inFile)
+      #print(inFile)
       #print(input$data_10X_folder)
     }
     
@@ -71,31 +71,24 @@ app_server <- function( input, output, session ) {
         else if(suff == 'h5')
           seqdata <- Read10X_h5(inFile)
         seqdata = CreateSeuratObject(counts = seqdata, min.cells = 3, min.features = 200)
-        seqdata <- NormalizeData(seqdata, normalization.method = "LogNormalize", scale.factor = 10000)
-        seqdata <- FindVariableFeatures(seqdata, selection.method = "vst", nfeatures = 2000)
-        seqdata <- ScaleData(seqdata, features = rownames(seqdata))
-        seqdata <- RunPCA(seqdata, features = VariableFeatures(object = seqdata))
-        seqdata <- FindNeighbors(seqdata, dims = 1:30)
-        seqdata <- FindClusters(seqdata, resolution = 0.5)
-        seqdata <- RunUMAP(seqdata, dims = 1:30)
       }
       else if(input$data_file_type == "data_10X")
       {
-        print(input$data_file_type)
-        print(parseDirPath(volumes, input$data_10X_folder))
-        
         seqdata <- Read10X(as.character(parseDirPath(volumes, input$data_10X_folder)))
         seqdata = CreateSeuratObject(counts = seqdata, min.cells = 3, min.features = 200)
-        seqdata <- NormalizeData(seqdata, normalization.method = "LogNormalize", scale.factor = 10000)
-        seqdata <- FindVariableFeatures(seqdata, selection.method = "vst", nfeatures = 2000)
-        seqdata <- ScaleData(seqdata, features = rownames(seqdata))
-        seqdata <- RunPCA(seqdata, features = VariableFeatures(object = seqdata))
-        seqdata <- FindNeighbors(seqdata, dims = 1:30)
-        seqdata <- FindClusters(seqdata, resolution = 0.5)
-        seqdata <- RunUMAP(seqdata, dims = 1:30)
       }
       else
+      {
         seqdata <- readRDS(inFile)
+      }
+      seqdata <- NormalizeData(seqdata, normalization.method = "LogNormalize", scale.factor = 10000)
+      seqdata <- FindVariableFeatures(seqdata, selection.method = "vst", nfeatures = 2000)
+      seqdata <- ScaleData(seqdata, features = rownames(seqdata))
+      seqdata <- RunPCA(seqdata, features = VariableFeatures(object = seqdata))
+      seqdata <- FindNeighbors(seqdata, dims = 1:30)
+      seqdata <- FindClusters(seqdata, resolution = 0.5)
+      seqdata <- RunUMAP(seqdata, dims = 1:30)
+      
       filepath_prefix = substring(inFile, 1, nchar(inFile)-4)
       if(file.exists(paste0(filepath_prefix, "_meta.csv")))
       {
@@ -335,8 +328,8 @@ app_server <- function( input, output, session ) {
           data_rds = QCReactive()$data
         else
           data_rds = inputDataReactive()$data
-        
-        p = DimPlot(data_rds, reduction = "umap",  pt.size = .1,group.by = input$batch)
+        #print(str(data_rds))
+        p = DimPlot(data_rds, reduction = "umap",  pt.size = .1, group.by = input$batch)
         shiny::setProgress(value = 0.8, detail = "Done.")
         res_plot = p
         return(list("plot" = res_plot))
