@@ -72,11 +72,11 @@ app_ui <- function(request) {
                                                        shinyDirButton("data_10X_folder", "Choose a 10X_folder" ,
                                                                       title = "",
                                                                       buttonType = "default", class = NULL,
-                                                                      icon = icon("folder", lib = "font-awesome"), multiple = F)                       
+                                                                      icon = icon("folder", lib = "font-awesome"), multiple = T)                       
                                       ),
-                                      conditionalPanel(condition="input.data_file_type=='data_rds'&&input.data_file_type!='data_10X'",
+                                      conditionalPanel(condition="input.data_file_type!='data_example'&&input.data_file_type!='data_10X'",
                                                        p("please input .rds file"),
-                                                       fileInput('datafile', 'Choose File(s) Containing Data', multiple = F)
+                                                       fileInput('datafile', 'Choose File(s) Containing Data', multiple = T)
                                       )
                                   )
                                   

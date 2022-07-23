@@ -48,9 +48,12 @@ app_server <- function( input, output, session ) {
     }
     else{
       inFile = input$datafile$datapath
-      print(input$datafile)
+      print(inFile)
+      #print(input$data_10X_folder)
     }
-    if (!is.null(inFile)||!is.null(input$data_10X_folder)) {
+    
+    if (!is.null(inFile)||length(parseDirPath(volumes, input$data_10X_folder))) {#!is.null(input$data_10X_folder)
+      #print()
       #seqdata <- readRDS(inFile)
       if(input$data_file_type == "data_rds")
       {
@@ -78,9 +81,8 @@ app_server <- function( input, output, session ) {
       }
       else if(input$data_file_type == "data_10X")
       {
-        print(as.character(parseDirPath(volumes, input$data_10X_folder)))
+        print(input$data_file_type)
         print(parseDirPath(volumes, input$data_10X_folder))
-        print(input$data_10X_folder)
         
         seqdata <- Read10X(as.character(parseDirPath(volumes, input$data_10X_folder)))
         seqdata = CreateSeuratObject(counts = seqdata, min.cells = 3, min.features = 200)
