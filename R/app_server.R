@@ -1072,7 +1072,7 @@ app_server <- function( input, output, session ) {
         colnames(cellInfo)=c('CellType', 'nGene' ,'nUMI')
         if(!dir.exists("./int"))
           dir.create("./int")
-        saveRDS(cellInfo,"./int/cellInfo.RDS")
+        saveRDS(cellInfo,"./int/cellInfo.Rds")
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
         # init
         exprMat <- as.matrix(data_rds@assays$RNA@counts)
@@ -1091,7 +1091,7 @@ app_server <- function( input, output, session ) {
         
         names(mydbs) <- c("500bp", "10kb")
         scenicOptions <- initializeScenic(org=input$org, dbDir=mydbDIR, dbs = mydbs, nCores=input$nCores)
-        saveRDS(scenicOptions, "./int/scenicOptions.rds")
+        saveRDS(scenicOptions, "./int/scenicOptions.Rds")
         # build co-expression net
         genesKept <- geneFiltering(exprMat, scenicOptions, 
                                   minCountsPerGene = input$minCountsPerGene1 * input$minCountsPerGene2 * ncol(exprMat), 
@@ -1104,8 +1104,9 @@ app_server <- function( input, output, session ) {
         scenicOptions <- runSCENIC_2_createRegulons(scenicOptions,coexMethod=c("top5perTarget")) # Toy run settings
         library(doParallel)
         scenicOptions@settings$nCores = 1
-        #scenicOptions <- initializeScenic(org=input$org, dbDir=mydbDIR, dbs = mydbs, nCores=1)
-        scenicOptions <- runSCENIC_3_scoreCells(scenicOptions, exprMat_filtered_log) 
+        saveRDS(scenicOptions, "./int/scenicOptions.Rds")
+        exprMat_log <- log2(exprMat+1)
+        scenicOptions <- runSCENIC_3_scoreCells(scenicOptions, exprMat_log) 
         scenicOptions <- runSCENIC_4_aucell_binarize(scenicOptions)
         tsneAUC(scenicOptions, aucType="AUC")
       },
