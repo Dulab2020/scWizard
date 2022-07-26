@@ -1236,13 +1236,19 @@ app_server <- function( input, output, session ) {
   cellphonedbReactive <- eventReactive(input$startcellphonedb, {
     withProgress(message = "Processing,please wait",{
       tryCatch({
-        data_rds = inputDataReactive()$data
+        #data_rds = inputDataReactive()$data
+        if(input$startSubannotion > 0 && !is.null(SubannotionReactive())){
+          data_rds = SubannotionReactive()$data
+        }else if(input$startAnnotion > 0 && !is.null(AnnotionReactive())){
+          data_rds = AnnotionReactive()$data_rds
+        }else{
+          data_rds = inputDataReactive()$data
+        }
         shiny::setProgress(value = 0.4, detail = "Calculating ...")
-        data_rds = inputDataReactive()$data
         counts_file = paste0(as.character(parseDirPath(volumes, input$cellphonedbin)), "/count.txt")
         meta_file = paste0(as.character(parseDirPath(volumes, input$cellphonedbin)), "/meta.txt")
-        dir.create("cellphonedb_in")
-        count_data = as.matrix(data_rds@assays$RNA@data)
+        #dir.create("cellphonedb_in")
+        count_data = as.matrix(data_rds@assays$RNA@counts)
         write.table(as.matrix(count_data), counts_file, sep='\t', quote=F)
         cellalltype = as.vector(data_rds@active.ident)
         cellalltype = as.data.frame(cellalltype)
