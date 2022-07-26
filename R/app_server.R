@@ -1110,7 +1110,7 @@ app_server <- function( input, output, session ) {
       },
       error=function(cond) {
         message("Here's the original error.")
-        #message(cond)
+        message(cond)
         return(NULL)
       })
     })
