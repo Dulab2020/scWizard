@@ -242,7 +242,7 @@ app_server <- function( input, output, session ) {
     withProgress(message = "Processing,please wait",{
       #data_rds = inputDataReactive()$data
       if(input$startAnnotion > 0 && !is.null(AnnotionReactive()))
-        data_rds = AnnotionReactive()$data
+        data_rds = AnnotionReactive()$data_rds
       else{
         data_rds = inputDataReactive()$data
       }
@@ -803,7 +803,7 @@ app_server <- function( input, output, session ) {
           Idents(data_rds) = data_rds@meta.data$pred_sub_cell
         }
         else if(input$startAnnotion > 0 && !is.null(AnnotionReactive())){
-          data_rds = AnnotionReactive()$data
+          data_rds = AnnotionReactive()$data_rds
           Idents(data_rds) = data_rds@meta.data$pred_cell
         }  
         else{
@@ -892,7 +892,7 @@ app_server <- function( input, output, session ) {
   infercnvReactive <- eventReactive(input$startinfercnv, {
     withProgress(message = "Processing,please wait",{
       if(input$startAnnotion > 0)
-        data_rds = AnnotionReactive()$data
+        data_rds = AnnotionReactive()$data_rds
       else
         data_rds = inputDataReactive()$data
       tryCatch({  
@@ -937,7 +937,7 @@ app_server <- function( input, output, session ) {
   output$myselectbox3 <-
     renderUI({
       if(input$startAnnotion > 0)
-        data_rds = AnnotionReactive()$data
+        data_rds = AnnotionReactive()$data_rds
       else
         data_rds = inputDataReactive()$data
       #label=names(summary(data_rds@active.ident))
@@ -948,7 +948,7 @@ app_server <- function( input, output, session ) {
   output$myselectcolorbox <-
     renderUI({
       if(input$startAnnotion > 0)
-        data_rds = AnnotionReactive()$data
+        data_rds = AnnotionReactive()$data_rds
       else
         data_rds = inputDataReactive()$data
       label=colnames(data_rds@meta.data)
@@ -962,7 +962,11 @@ app_server <- function( input, output, session ) {
     withProgress(message = "Processing,please wait",{
       tryCatch({
         library(monocle)
-        data_rds = inputDataReactive()$data
+        if(input$startAnnotion > 0)
+          data_rds = AnnotionReactive()$data_rds
+        else
+          data_rds = inputDataReactive()$data
+        #data_rds = inputDataReactive()$data
         if(input$celltype=='all')
         {
           new_data_rds = data_rds
@@ -1055,7 +1059,7 @@ app_server <- function( input, output, session ) {
           data_rds = SubannotionReactive()$data
         }
         else if(input$startAnnotion > 0 && !is.null(AnnotionReactive())){
-          data_rds = AnnotionReactive()$data
+          data_rds = AnnotionReactive()$data_rds
         }
         else{
           data_rds = inputDataReactive()$data
@@ -1105,7 +1109,7 @@ app_server <- function( input, output, session ) {
       },
       error=function(cond) {
         message("Here's the original error.")
-        message(cond)
+        #message(cond)
         return(NULL)
       })
     })
@@ -1159,7 +1163,14 @@ app_server <- function( input, output, session ) {
   startCorReactive <- eventReactive(input$startCor, {
     withProgress(message = "Processing,please wait",{
       tryCatch({
-        data_rds = inputDataReactive()$data
+        if(input$startSubannotion > 0 && !is.null(SubannotionReactive())){
+          data_rds = SubannotionReactive()$data
+        }else if(input$startAnnotion > 0 && !is.null(AnnotionReactive())){
+          data_rds = AnnotionReactive()$data_rds
+        }else{
+          data_rds = inputDataReactive()$data
+        }
+        #data_rds = inputDataReactive()$data
         if(input$celltype=='all')
         {
           new_data_rds = data_rds
