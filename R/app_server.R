@@ -634,7 +634,7 @@ app_server <- function( input, output, session ) {
       tryCatch({
         #data_rds = inputDataReactive()$data
         if(input$startSubannotion > 0 && !is.null(SubannotionReactive())){
-          data_rds = SubannotionReactive()$data_rds
+          data_rds = SubannotionReactive()$data
           tmp_data = subset(data_rds, subset = pred_sub_cell==input$celltype1)
         }else if(input$startAnnotion > 0 && !is.null(AnnotionReactive())){
           data_rds = AnnotionReactive()$data_rds
