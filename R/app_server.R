@@ -1077,6 +1077,7 @@ app_server <- function( input, output, session ) {
         # init
         exprMat <- as.matrix(data_rds@assays$RNA@counts)
         exprMat <- exprMat[which(rowSums(exprMat)>0),]
+        print(dim(exprMat))
         mydbDIR <- "./cisTarget"
         if(input$org == 'hgnc')
         {
@@ -1097,6 +1098,7 @@ app_server <- function( input, output, session ) {
                                   minCountsPerGene = input$minCountsPerGene1 * input$minCountsPerGene2 * ncol(exprMat), 
                                   minSamples = ncol(exprMat) * input$minSamples)
         exprMat_filtered <- exprMat[genesKept, ]
+        print(dim(exprMat_filtered))
         runCorrelation(exprMat_filtered, scenicOptions)
         exprMat_filtered_log <- log2(exprMat_filtered+1)
         runGenie3(exprMat_filtered_log, scenicOptions, nParts=5)
