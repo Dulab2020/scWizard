@@ -1106,7 +1106,7 @@ app_server <- function( input, output, session ) {
         scenicOptions <- initializeScenic(org=input$org, dbDir=mydbDIR, dbs = mydbs, nCores=1)
         scenicOptions <- runSCENIC_3_scoreCells(scenicOptions, exprMat_filtered_log) 
         scenicOptions <- runSCENIC_4_aucell_binarize(scenicOptions)
-        umapAUC(scenicOptions, aucType="AUC")
+        tsneAUC(scenicOptions, aucType="AUC")
       },
       error=function(cond) {
         message("Here's the original error.")
