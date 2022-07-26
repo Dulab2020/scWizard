@@ -227,7 +227,7 @@ app_server <- function( input, output, session ) {
   output$myselectbox2 <-
     renderUI({
       if(input$startAnnotion > 0 && !is.null(AnnotionReactive()))
-        data_rds = AnnotionReactive()$data
+        data_rds = AnnotionReactive()$data_rds
       else{
         data_rds = inputDataReactive()$data
       }
