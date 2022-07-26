@@ -576,8 +576,8 @@ app_ui <- function(request) {
                                                                          h4("Set the value of Scenic parameter:"),
                                                                          
                                                                          column(4,numericInput("minCountsPerGene1", "minCountsPerGene_1", value = 3)),
-                                                                         column(4,numericInput("minCountsPerGene2", "minCountsPerGene_2", value = 0.1)),
-                                                                         column(4,numericInput("minSamples", "choose minSamples", value = 0.1)),
+                                                                         column(4,numericInput("minCountsPerGene2", "minCountsPerGene_2", value = 0.01)),
+                                                                         column(4,numericInput("minSamples", "choose minSamples", value = 0.01)),
                                                                          column(4,numericInput("nCores", "nCores", value = 4)),
                                                                          column(4,selectInput("org", "choose org",
                                                                                               choices = c("mgi", "hgnc")
