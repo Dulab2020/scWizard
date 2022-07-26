@@ -1103,7 +1103,8 @@ app_server <- function( input, output, session ) {
         scenicOptions <- runSCENIC_1_coexNetwork2modules(scenicOptions)
         scenicOptions <- runSCENIC_2_createRegulons(scenicOptions,coexMethod=c("top5perTarget")) # Toy run settings
         library(doParallel)
-        scenicOptions <- initializeScenic(org=input$org, dbDir=mydbDIR, dbs = mydbs, nCores=1)
+        scenicOptions@settings$nCores = 1
+        #scenicOptions <- initializeScenic(org=input$org, dbDir=mydbDIR, dbs = mydbs, nCores=1)
         scenicOptions <- runSCENIC_3_scoreCells(scenicOptions, exprMat_filtered_log) 
         scenicOptions <- runSCENIC_4_aucell_binarize(scenicOptions)
         tsneAUC(scenicOptions, aucType="AUC")
